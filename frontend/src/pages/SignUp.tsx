@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowLeft,
-  ShieldCheck,
   Mail,
   Lock,
   User,
@@ -121,7 +120,6 @@ export default function SignUp() {
     phoneNumber: "",
     password: "",
     confirmPassword: "",
-    licenseNumber: "",
     companyName: "",
     securityCode: "",
   });
@@ -151,8 +149,8 @@ export default function SignUp() {
     }
 
     if (accountType === "agent") {
-      if (!formData.licenseNumber || !formData.securityCode) {
-        setError("License number and security code are required for agents");
+      if (!formData.securityCode) {
+        setError("Security code is required for agents");
         return;
       }
     }
@@ -174,7 +172,6 @@ export default function SignUp() {
       };
 
       if (accountType === "agent") {
-        profileData.licenseNumber = formData.licenseNumber;
         if (formData.companyName) profileData.companyName = formData.companyName;
       }
 
@@ -377,18 +374,6 @@ export default function SignUp() {
                       <div className="text-sm font-semibold text-emerald-950">
                         Agent verification
                       </div>
-
-                      <Field label="License number" icon={<ShieldCheck className="h-4 w-4" />}>
-                        <Input
-                          type="text"
-                          name="licenseNumber"
-                          value={formData.licenseNumber}
-                          onChange={handleChange}
-                          placeholder="RE-12345"
-                          className="w-full rounded-2xl pl-9 bg-white"
-                          required
-                        />
-                      </Field>
 
                       <Field label="Company name (optional)" icon={<Building2 className="h-4 w-4" />}>
                         <Input

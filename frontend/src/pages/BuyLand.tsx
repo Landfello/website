@@ -204,11 +204,13 @@ function ListingTile({
   l,
   saved,
   onToggleSave,
+  onShare,
   onClick,
 }: {
   l: Listing;
   saved: boolean;
   onToggleSave: (id: string) => void;
+  onShare: () => void;
   onClick: () => void;
 }) {
   const address = `${l.neighborhood ? `${l.neighborhood}, ` : ""}${l.city}, ${l.country}`;
@@ -279,12 +281,19 @@ function ListingTile({
               type="button"
               className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
               aria-label="Share"
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare();
+              }}
             >
               <Share2 className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => onToggleSave(l.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSave(l.id);
+              }}
               className={`flex items-center gap-1 transition-colors ${
                 saved
                   ? "text-red-600 hover:text-red-700"
@@ -325,7 +334,16 @@ export default function LandfelloBuyPage() {
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [freeholdOnly, setFreeholdOnly] = useState(false);
 
-  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [savedIds, setSavedIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("landfello:savedProperties");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
+    } catch {
+      return [];
+    }
+  });
   
   // Properties from Cosmos DB
   const [properties, setProperties] = useState<Property[]>([]);
@@ -337,7 +355,28 @@ export default function LandfelloBuyPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const toggleSave = (id: string) => {
-    setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSavedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem("landfello:savedProperties", JSON.stringify(next));
+      } catch {
+        // Ignore storage failures (private mode, quota, etc.)
+      }
+      return next;
+    });
+  };
+
+  const copyCurrentUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = window.location.href;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
   };
 
   // Read country from URL parameter on mount
@@ -714,6 +753,7 @@ export default function LandfelloBuyPage() {
                   l={l} 
                   saved={savedIds.includes(l.id)} 
                   onToggleSave={toggleSave}
+                  onShare={copyCurrentUrl}
                   onClick={() => {
                     // Find the full property object from properties array
                     const fullProperty = properties.find(p => p.propertyID === l.id);

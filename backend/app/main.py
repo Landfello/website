@@ -60,9 +60,6 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    if payload.accountType == "agent" and not payload.licenseNumber:
-        raise HTTPException(status_code=400, detail="License number is required for agents")
-
     user = User(
         id=str(uuid.uuid4()),
         email=payload.email.lower(),
@@ -138,6 +135,10 @@ def create_property(
     if user.account_type != "agent":
         raise HTTPException(status_code=403, detail="Only agents can list land for sale")
 
+    images = payload.images or []
+    if len(images) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 property images are required")
+
     prop = Property(
         property_id=str(uuid.uuid4()),
         user_id=user.id,
@@ -154,7 +155,7 @@ def create_property(
         price=payload.price,
         monthly_rent=payload.monthlyRent,
         tags=payload.tags or [],
-        images=payload.images or [],
+        images=images,
         contact_name=payload.contactName,
         contact_phone=payload.contactPhone,
         contact_email=str(payload.contactEmail),
@@ -202,6 +203,10 @@ def update_property(
     if prop.user_id != user.id:
         raise HTTPException(status_code=403, detail="You do not have permission to update this property")
 
+    images = payload.images or []
+    if len(images) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 property images are required")
+
     prop.listing_type = payload.listingType
     prop.title = payload.title
     prop.description = payload.description
@@ -215,7 +220,7 @@ def update_property(
     prop.price = payload.price
     prop.monthly_rent = payload.monthlyRent
     prop.tags = payload.tags or []
-    prop.images = payload.images or []
+    prop.images = images
     prop.contact_name = payload.contactName
     prop.contact_phone = payload.contactPhone
     prop.contact_email = str(payload.contactEmail)

@@ -216,6 +216,11 @@ export default function AddProperty() {
       return;
     }
 
+    if (formData.images.length < 2) {
+      setError("Please upload at least 2 property images");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -479,7 +484,7 @@ export default function AddProperty() {
                     Click to upload or drag and drop images
                   </span>
                   <div className="text-xs text-emerald-950/50">
-                    PNG, JPG, GIF up to 5MB each • Multiple images supported
+                    PNG, JPG, GIF up to 5MB each • Minimum 2 images required
                   </div>
                 </label>
               </div>

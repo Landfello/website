@@ -10,18 +10,14 @@ import {
   ShieldCheck,
   Sparkles,
   Phone,
+  Check,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Property } from "@/services/propertyService";
 import { useAuth } from "@/contexts/AuthContext";
 import { CallToBuyDialog } from "@/components/CallToBuyDialog";
-
-const ScrollArea = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={`overflow-y-auto ${className || ""}`}>{children}</div>
-);
 
 interface PropertyDetailsDialogProps {
   open: boolean;
@@ -42,11 +38,13 @@ export function PropertyDetailsDialog({
   const { currentUser } = useAuth();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showCallDialog, setShowCallDialog] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     if (open && property) {
       setActiveImageIndex(0);
       setShowCallDialog(false);
+      setShareCopied(false);
     }
   }, [open, property]);
 
@@ -61,6 +59,30 @@ export function PropertyDetailsDialog({
       return;
     }
     setShowCallDialog(true);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2000);
+    }
+  };
+
+  const handleSave = () => {
+    if (onSave && property.propertyID) {
+      onSave(property.propertyID);
+    }
   };
 
   const images =
@@ -104,98 +126,82 @@ export function PropertyDetailsDialog({
               <div className="text-sm text-emerald-700">Back to search</div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="gap-2 rounded-full"
-                onClick={() => onSave && property.propertyID && onSave(property.propertyID)}
-              >
-                <Heart className={`h-4 w-4 ${saved ? "fill-red-600 text-red-600" : ""}`} /> Save
+              <Button variant="ghost" className="gap-2 rounded-full" onClick={handleSave}>
+                <Heart className={`h-4 w-4 ${saved ? "fill-red-600 text-red-600" : ""}`} />
+                {saved ? "Saved" : "Save"}
               </Button>
-              <Button variant="ghost" className="gap-2 rounded-full">
-                <Share2 className="h-4 w-4" /> Share
+              <Button variant="ghost" className="gap-2 rounded-full" onClick={handleShare}>
+                {shareCopied ? <Check className="h-4 w-4 text-emerald-700" /> : <Share2 className="h-4 w-4" />}
+                {shareCopied ? "Copied" : "Share"}
               </Button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
             <div className="lg:col-span-8 bg-white overflow-y-auto max-h-[calc(85vh-60px)]">
-              <div className="relative p-4">
-                {images.length > 0 && (
-                  <div
-                    className="grid grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-xl"
-                    style={{ height: "280px" }}
-                  >
-                    <div className="relative col-span-2 row-span-2">
-                      <img
-                        src={images[activeImageIndex] || images[0]}
-                        alt="Main property view"
-                        className="h-full w-full object-cover"
-                      />
-                      <div className="absolute left-3 top-3">
-                        <Badge className="rounded-full bg-emerald-900/90 text-emerald-50">
-                          {listingType}
-                        </Badge>
+              <div className="p-4">
+                <div className="relative overflow-hidden rounded-xl bg-emerald-950/5">
+                  <img
+                    src={images[activeImageIndex] || images[0]}
+                    alt={`${property.title} — photo ${activeImageIndex + 1}`}
+                    className="h-[320px] w-full object-cover sm:h-[380px]"
+                  />
+                  <div className="absolute left-3 top-3">
+                    <Badge className="rounded-full bg-emerald-900/90 text-emerald-50">{listingType}</Badge>
+                  </div>
+                  {images.length > 1 && (
+                    <>
+                      <div className="absolute bottom-3 right-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white">
+                        {activeImageIndex + 1} / {images.length}
                       </div>
-                      {images.length > 1 && (
-                        <div className="absolute bottom-2 right-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="rounded-lg bg-white/90 hover:bg-white text-xs h-7 px-2"
-                            onClick={() =>
-                              setActiveImageIndex((prev) => (prev + 1) % images.length)
-                            }
-                          >
-                            {images.length} photos
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    {images.slice(1, 5).map((img, idx) => (
                       <button
-                        key={idx}
                         type="button"
-                        className="relative overflow-hidden"
-                        onClick={() => setActiveImageIndex(idx + 1)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white"
+                        onClick={() =>
+                          setActiveImageIndex((n) => (n - 1 + images.length) % images.length)
+                        }
+                        aria-label="Previous photo"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow hover:bg-white"
+                        onClick={() => setActiveImageIndex((n) => (n + 1) % images.length)}
+                        aria-label="Next photo"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {images.length > 1 && (
+                  <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                    {images.map((img, idx) => (
+                      <button
+                        key={`${img}-${idx}`}
+                        type="button"
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-lg ring-2 transition ${
+                          idx === activeImageIndex
+                            ? "ring-emerald-700"
+                            : "ring-transparent opacity-80 hover:opacity-100"
+                        }`}
                       >
                         <img
                           src={img}
-                          alt={`Property view ${idx + 2}`}
+                          alt={`Thumbnail ${idx + 1}`}
                           className="h-full w-full object-cover"
                         />
                       </button>
                     ))}
                   </div>
                 )}
-
-                {images.length > 1 && (
-                  <div className="mt-2 flex items-center justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7 rounded-full border-emerald-200"
-                      onClick={() =>
-                        setActiveImageIndex((n) => (n - 1 + images.length) % images.length)
-                      }
-                      aria-label="Previous"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7 rounded-full border-emerald-200"
-                      onClick={() => setActiveImageIndex((n) => (n + 1) % images.length)}
-                      aria-label="Next"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
               </div>
 
               <div className="px-4 pb-4">
-                <div className="mt-2">
+                <div className="mt-1">
                   <div className="text-2xl font-bold tracking-tight text-emerald-950">
                     {property.title}
                   </div>
@@ -241,51 +247,49 @@ export function PropertyDetailsDialog({
               </div>
             </div>
 
-            <div className="lg:col-span-4 border-l border-emerald-100 bg-emerald-50 overflow-y-auto max-h-[calc(85vh-60px)]">
-              <ScrollArea className="h-full">
-                <div className="space-y-4 p-4">
-                  <Card className="rounded-2xl">
-                    <CardContent className="space-y-3 p-4">
-                      {property.status === "sold" ? (
-                        <Button className="w-full" disabled>
-                          Sold
-                        </Button>
-                      ) : canBuy ? (
-                        <Button
-                          className="w-full bg-emerald-700 hover:bg-emerald-800 gap-2"
-                          onClick={handleBuyLand}
-                        >
-                          <Phone className="h-4 w-4" />
-                          Buy land
-                        </Button>
-                      ) : null}
-                      <div className="text-xs text-emerald-700">
-                        Tap Buy land to get the Landfello phone number and call to complete your
-                        purchase.
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="rounded-2xl border-emerald-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-950">
-                        <ShieldCheck className="h-4 w-4" /> Verified details
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        {facts.map((f) => (
-                          <div
-                            key={f.label}
-                            className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm"
-                          >
-                            <span className="text-emerald-700">{f.label}</span>
-                            <span className="font-medium text-emerald-950">{f.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+            <div className="lg:col-span-4 border-l border-emerald-100 bg-white overflow-y-auto max-h-[calc(85vh-60px)]">
+              <div className="p-5 space-y-6">
+                <div>
+                  {property.status === "sold" ? (
+                    <Button className="w-full h-11 rounded-xl" disabled>
+                      Sold
+                    </Button>
+                  ) : canBuy ? (
+                    <Button
+                      className="w-full h-11 rounded-xl bg-emerald-800 hover:bg-emerald-900 gap-2 text-base font-semibold"
+                      onClick={handleBuyLand}
+                    >
+                      <Phone className="h-4 w-4" />
+                      Buy land
+                    </Button>
+                  ) : null}
+                  {canBuy && property.status !== "sold" ? (
+                    <p className="mt-3 text-xs leading-relaxed text-emerald-700/80">
+                      Tap Buy land to get the Landfello phone number and call to complete your purchase.
+                    </p>
+                  ) : null}
                 </div>
-              </ScrollArea>
+
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-950">
+                    <ShieldCheck className="h-4 w-4 text-emerald-700" />
+                    Verified details
+                    {property.verified ? (
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800 ring-1 ring-emerald-100">
+                        Verified
+                      </span>
+                    ) : null}
+                  </div>
+                  <dl className="mt-3 divide-y divide-emerald-100 border-t border-b border-emerald-100">
+                    {facts.map((f) => (
+                      <div key={f.label} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                        <dt className="text-emerald-700">{f.label}</dt>
+                        <dd className="font-medium text-emerald-950 text-right">{f.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

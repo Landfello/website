@@ -71,7 +71,10 @@ def test_agent_can_create_listing(client):
         "tenure": "Freehold",
         "price": 25000,
         "tags": ["Test"],
-        "images": ["https://example.com/land.jpg"],
+        "images": [
+            "https://example.com/land.jpg",
+            "https://example.com/land-2.jpg",
+        ],
         "contactName": "Ama Mensah",
         "contactPhone": "+233200000001",
         "contactEmail": SEED_AGENT_EMAIL,
@@ -81,6 +84,28 @@ def test_agent_can_create_listing(client):
     body = resp.json()
     assert body["title"] == payload["title"]
     assert body["status"] == "available"
+
+
+def test_create_listing_requires_two_images(client):
+    headers = auth_headers(client, SEED_AGENT_EMAIL)
+    payload = {
+        "listingType": "sale",
+        "title": "Needs more photos",
+        "description": "Test listing",
+        "country": "Ghana",
+        "city": "Accra",
+        "propertyType": "Residential",
+        "areaAcres": 2,
+        "tenure": "Freehold",
+        "price": 25000,
+        "tags": ["Test"],
+        "images": ["https://example.com/land.jpg"],
+        "contactName": "Ama Mensah",
+        "contactPhone": "+233200000001",
+        "contactEmail": SEED_AGENT_EMAIL,
+    }
+    resp = client.post("/api/properties", json=payload, headers=headers)
+    assert resp.status_code == 400
 
 
 def test_buyer_cannot_create_listing(client):
@@ -120,7 +145,6 @@ def test_signup_agent_and_investor(client):
             "password": "password123",
             "accountType": "agent",
             "firstName": "Ada",
-            "licenseNumber": "LIC-1",
             "companyName": "Ada Lands",
         },
     )

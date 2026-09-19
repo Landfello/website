@@ -6,6 +6,9 @@ import SignUp from './pages/SignUp';
 import HowItWorks from './pages/HowItWorks';
 import SavingsProgram from './pages/SavingsProgram';
 import About from './pages/About';
+import Legal from './pages/Legal';
+import FAQ from './pages/FAQ';
+import Contact from './pages/Contact';
 import BuyLand from './pages/BuyLand';
 import AddProperty from './pages/AddProperty';
 import MyProperties from './pages/MyProperties';
@@ -69,6 +72,9 @@ function App() {
             <Route path="/partner-program" element={<SavingsProgram />} />
             <Route path="/savings-program" element={<SavingsProgram />} />
             <Route path="/about" element={<About />} />
+            <Route path="/legal" element={<Legal />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/buy" element={<BuyLand />} />
             <Route path="/buy-land" element={<BuyLand />} />
             <Route path="/add-property" element={<AddProperty />} />
