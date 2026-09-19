@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Land marketplace for buying and selling land in Africa",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "install:all": "npm install --prefix frontend && python -m pip install -r backend/requirements.txt",
     "dev": "concurrently -n api,web -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",

@@ -1,9 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -14,15 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  ArrowUpRight,
   Check,
   ChevronDown,
   Heart,
   MapPin,
   Search,
-  ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
   Share2,
 } from "lucide-react";
 import { TopNav } from "@/components/Profile/TopNav";
@@ -68,95 +64,6 @@ function propertyToListing(property: Property): Listing {
     imageUrl: property.images && property.images.length > 0 ? property.images[0] : "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1400&q=80",
   };
 }
-
-// Legacy mock data - kept as fallback
-const LISTINGS: Listing[] = [
-  {
-    id: "lf-101",
-    title: "Beachfront Parcel — 0.9 acres",
-    country: "Ghana",
-    city: "Cape Coast",
-    neighborhood: "Ola",
-    priceUSD: 52000,
-    areaAcres: 0.9,
-    landType: "Residential",
-    tenure: "Freehold",
-    verified: true,
-    tags: ["Ocean view", "Road access"],
-    daysOnMarket: 4,
-    sellerType: "Agent",
-    imageUrl:
-      "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "lf-102",
-    title: "Starter Lot — 0.4 acres",
-    country: "Nigeria",
-    city: "Lekki",
-    neighborhood: "Phase 1",
-    priceUSD: 18000,
-    areaAcres: 0.4,
-    landType: "Residential",
-    tenure: "Leasehold",
-    verified: false,
-    tags: ["Near amenities"],
-    daysOnMarket: 9,
-    sellerType: "Owner",
-    imageUrl:
-      "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "lf-103",
-    title: "Farm Plot — 5.1 acres",
-    country: "Kenya",
-    city: "Nakuru",
-    neighborhood: "Rongai",
-    priceUSD: 14500,
-    areaAcres: 5.1,
-    landType: "Agricultural",
-    tenure: "Freehold",
-    verified: true,
-    tags: ["Water nearby", "Fertile land"],
-    daysOnMarket: 2,
-    sellerType: "Agent",
-    imageUrl:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "lf-104",
-    title: "Roadside Commercial — 0.7 acres",
-    country: "Tanzania",
-    city: "Dar es Salaam",
-    neighborhood: "Kinondoni",
-    priceUSD: 61000,
-    areaAcres: 0.7,
-    landType: "Commercial",
-    tenure: "Leasehold",
-    verified: true,
-    tags: ["Main road", "High traffic"],
-    daysOnMarket: 11,
-    sellerType: "Agent",
-    imageUrl:
-      "https://images.unsplash.com/photo-1523413450673-1663dff51d5a?auto=format&fit=crop&w=1400&q=80",
-  },
-  {
-    id: "lf-105",
-    title: "Hillside Views — 1.8 acres",
-    country: "Morocco",
-    city: "Agadir",
-    neighborhood: "Aourir",
-    priceUSD: 27500,
-    areaAcres: 1.8,
-    landType: "Mixed Use",
-    tenure: "Freehold",
-    verified: false,
-    tags: ["Mountain views"],
-    daysOnMarket: 6,
-    sellerType: "Owner",
-    imageUrl:
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=80",
-  },
-];
 
 const HOME_TYPES = [
   { key: "Residential", label: "Residential" },
@@ -303,7 +210,6 @@ function ListingTile({
 
 export default function LandfelloBuyPage() {
   useRoleGate("buy");
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Search

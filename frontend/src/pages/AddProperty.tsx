@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { createProperty, Property } from "@/services/propertyService";
 import {
-  ArrowLeft,
   MapPin,
   DollarSign,
   Home,
@@ -13,12 +12,11 @@ import {
   Tag,
   Phone,
   Mail,
-  Upload,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TopNav } from "@/components/Profile/TopNav";
 

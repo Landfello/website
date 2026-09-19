@@ -1,0 +1,8 @@
+/backend
+/src
+/supabase
+.npm-cache
+*.db
+**/.venv
+**/__pycache__
+**/firebase-service-account.json

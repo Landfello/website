@@ -4,7 +4,7 @@ import { TopNav } from "@/components/Profile/TopNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings as SettingsIcon, Upload, X, Check, Loader2, Phone, Building2, Key, Tag, Plus, Calendar, MapPin, Mail, Lock, Trash2, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { Upload, X, Check, Loader2, Phone, Building2, Key, Tag, Plus, Calendar, MapPin, Mail, Lock, Trash2, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // Simple image cropper component using canvas
@@ -26,7 +26,6 @@ function ImageCropper({
 
   const handleImageLoad = useCallback(() => {
     if (imageRef.current && containerRef.current) {
-      const img = imageRef.current;
       const container = containerRef.current;
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
@@ -375,8 +374,11 @@ export default function Settings() {
   };
 
   const getInitials = () => {
-    if (currentUser?.displayName) {
-      return currentUser.displayName
+    const displayName =
+      currentUser?.displayName ||
+      [userProfile?.firstName, userProfile?.lastName].filter(Boolean).join(" ");
+    if (displayName) {
+      return displayName
         .split(" ")
         .slice(0, 2)
         .map((s) => s[0]?.toUpperCase())

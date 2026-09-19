@@ -7,7 +7,6 @@ import {
   Users,
   Target,
   Heart,
-  Globe,
   CheckCircle2,
   ArrowRight,
 } from "lucide-react";
