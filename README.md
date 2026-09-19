@@ -51,12 +51,13 @@ npm run test:backend
 
 ## Deploy frontend to Vercel
 
-The React app lives in `frontend/`. This repo includes a root `vercel.json` so importing the GitHub repo into Vercel deploys only that app (not the Python API).
+The React app lives in `frontend/`. In Vercel, set **Root Directory** to `frontend` so install/build run in that folder (not `frontend/frontend`).
 
 1. Push this repo to GitHub
 2. In Vercel → **Add New…** → **Project** → import the repo
-3. Leave **Root Directory** as the repo root (the included `vercel.json` builds `frontend/`)
-4. Add environment variables (Production + Preview):
+3. Set **Root Directory** to `frontend`
+4. Under **Build & Development Settings**, leave Install / Build / Output as the defaults (`npm install`, `npm run build`, `dist`). If they were overridden to `--prefix frontend`, turn the overrides off.
+5. Add environment variables (Production + Preview):
 
 | Variable | Example |
 |----------|---------|
@@ -69,8 +70,8 @@ The React app lives in `frontend/`. This repo includes a root `vercel.json` so i
 | `VITE_FIREBASE_APP_ID` | from Firebase console |
 | `VITE_FIREBASE_MEASUREMENT_ID` | optional |
 
-5. Deploy
-6. Copy the Vercel URL into the API’s `FRONTEND_URL` and `CORS_ORIGINS` on Render, then redeploy the API
+6. Deploy
+7. Copy the Vercel URL into the API’s `FRONTEND_URL` and `CORS_ORIGINS` on Render, then redeploy the API
 
 `VITE_*` values are baked in at build time. After changing them, trigger a new Vercel deployment.
 
