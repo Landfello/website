@@ -13,8 +13,8 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
-        sync: false
+        value: https://website-zk2l.vercel.app
       - key: CORS_ORIGINS
-        sync: false
+        value: https://website-zk2l.vercel.app,http://localhost:5173
       - key: DATABASE_URL
         value: sqlite:////data/landfello.db
