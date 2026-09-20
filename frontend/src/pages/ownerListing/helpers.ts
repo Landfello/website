@@ -64,7 +64,7 @@ export function sectionComplete(draft: OwnerListingDraft, step: number): boolean
     case 5:
       return Boolean(draft.land.title) && draft.land.size != null;
     case 6:
-      return draft.boundaries.surveyed !== "unknown";
+      return true;
     case 7:
       return draft.documents.length > 0;
     case 8:

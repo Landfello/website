@@ -325,7 +325,7 @@ export const STEP_META: StepMeta[] = [
     title: "Confirm the property boundaries",
     description:
       "Clear boundary information helps prevent disputes and allows buyers to understand exactly what is being sold.",
-    continueLabel: "Save Boundaries",
+    continueLabel: "Continue",
   },
   {
     step: 7,

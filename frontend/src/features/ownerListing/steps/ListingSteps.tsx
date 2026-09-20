@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import {
   Field,
   FileUploadZone,
-  MapPlaceholder,
   SelectableCard,
   StatusBadge,
   YesNoUnknown,
@@ -55,8 +54,6 @@ type OnChange = (
     | Partial<OwnerListingDraft>
     | ((prev: OwnerListingDraft) => OwnerListingDraft),
 ) => void;
-
-const ACCRA = { lat: 5.6037, lng: -0.187 };
 
 const inputClass = "rounded-2xl border-emerald-900/15";
 const sectionClass =
@@ -1012,7 +1009,6 @@ function Step6Boundaries({
   onChange: OnChange;
 }) {
   const b = draft.boundaries;
-  const loc = draft.location;
   const setBoundaries = (patch: Partial<typeof b>) =>
     update(onChange, { boundaries: { ...b, ...patch } });
 
@@ -1095,23 +1091,13 @@ function Step6Boundaries({
       <div className={sectionClass}>
         <FileUploadZone
           label="Survey uploads"
-          hint="Upload site plans, cadastral plans, or survey reports."
+          hint="Optional. Upload site plans, cadastral plans, or survey reports if you have them."
           files={b.surveyUploads.map(toUploadItem)}
           onChange={(items) =>
             setBoundaries({ surveyUploads: items.map(fromUploadItem) })
           }
         />
       </div>
-
-      <MapPlaceholder
-        lat={loc.lat ?? ACCRA.lat}
-        lng={loc.lng ?? ACCRA.lng}
-        hideExactLocation={loc.hideExactLocation}
-        boundaryPoints={loc.boundaryPoints ?? []}
-        onChange={(patch) =>
-          update(onChange, { location: { ...loc, ...patch } })
-        }
-      />
 
       <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Boundary information is provided by the seller and reviewed by Landfello.
@@ -1826,8 +1812,6 @@ export function validateStep(
       return null;
     }
     case 6: {
-      if (!toYesNo(draft.boundaries.surveyed))
-        return "Indicate whether the land has been surveyed.";
       return null;
     }
     case 7: {
