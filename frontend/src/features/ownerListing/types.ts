@@ -310,8 +310,8 @@ export const STEP_META: StepMeta[] = [
     step: 4,
     title: "Where is the land located?",
     description:
-      "Add the precise location so buyers can understand where the property is and so our team can verify it.",
-    continueLabel: "Confirm Location",
+      "Add the city and area so buyers can understand where the property is.",
+    continueLabel: "Continue",
   },
   {
     step: 5,

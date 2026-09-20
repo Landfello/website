@@ -821,14 +821,6 @@ function Step4Location({
           </Field>
         ))}
       </div>
-
-      <MapPlaceholder
-        lat={loc.lat ?? ACCRA.lat}
-        lng={loc.lng ?? ACCRA.lng}
-        hideExactLocation={loc.hideExactLocation}
-        boundaryPoints={loc.boundaryPoints ?? []}
-        onChange={(patch) => setLocation(patch)}
-      />
     </div>
   );
 }
