@@ -60,8 +60,9 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    if payload.accountType == "agent" and not payload.licenseNumber:
-        raise HTTPException(status_code=400, detail="License number is required for agents")
+    license_number = payload.licenseNumber
+    if payload.accountType == "agent" and not license_number:
+        license_number = payload.companyName or "pending"
 
     user = User(
         id=str(uuid.uuid4()),
@@ -71,7 +72,7 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         first_name=payload.firstName,
         last_name=payload.lastName,
         phone_number=payload.phoneNumber,
-        license_number=payload.licenseNumber if payload.accountType == "agent" else None,
+        license_number=license_number if payload.accountType == "agent" else None,
         company_name=payload.companyName if payload.accountType == "agent" else None,
     )
     db.add(user)

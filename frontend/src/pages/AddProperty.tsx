@@ -234,6 +234,8 @@ export default function AddProperty() {
         areaAcres: parseFloat(formData.areaAcres) || 0,
         tenure: listingType === "sale" ? (formData.tenure as "Freehold" | "Leasehold") : undefined,
         leaseTerm: listingType === "rent" ? (formData.leaseTerm as "Short-term" | "Long-term" | "Flexible") : undefined,
+        price: listingType === "sale" ? parseFloat(formData.price) || undefined : undefined,
+        monthlyRent: listingType === "rent" ? parseFloat(formData.monthlyRent) || undefined : undefined,
         tags: formData.tags,
         images: formData.images,
         contactName: formData.contactName,

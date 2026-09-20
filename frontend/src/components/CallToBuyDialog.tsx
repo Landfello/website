@@ -1,5 +1,5 @@
 import { Phone } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LANDFELLO_INQUIRY_PHONE, LANDFELLO_INQUIRY_TEL_HREF } from "@/lib/contact";
 
@@ -17,12 +17,12 @@ export function CallToBuyDialog({ open, onOpenChange, propertyTitle }: CallToBuy
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/15">
             <Phone className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-semibold">Call to buy this land</h2>
-          <p className="mt-2 text-sm text-emerald-100">
+          <DialogTitle className="text-xl font-semibold">Call to buy this land</DialogTitle>
+          <DialogDescription className="mt-2 text-sm text-emerald-100">
             {propertyTitle
               ? `Speak with Landfello about “${propertyTitle}”.`
               : "Speak with Landfello to complete your purchase."}
-          </p>
+          </DialogDescription>
         </div>
 
         <div className="space-y-5 px-6 py-6">

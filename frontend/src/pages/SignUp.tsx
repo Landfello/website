@@ -172,8 +172,11 @@ export default function SignUp() {
       if (accountType === "agent" && formData.companyName) {
         profileData.companyName = formData.companyName;
       }
+      if (accountType === "agent" && formData.securityCode) {
+        profileData.licenseNumber = formData.securityCode.trim();
+      }
 
-      await signup(formData.email, formData.password, accountType, profileData);
+      await signup(formData.email.trim(), formData.password, accountType, profileData);
       navigate(accountType === "agent" ? "/sell" : "/buy");
     } catch (err: any) {
       setError(err.message || "Failed to create account. Please try again.");

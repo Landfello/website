@@ -12,7 +12,7 @@ import {
   Phone,
   Check,
 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Property } from "@/services/propertyService";
@@ -110,6 +110,10 @@ export function PropertyDetailsDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange} modal>
         <DialogContent className="max-w-6xl overflow-hidden rounded-2xl p-0 max-h-[85vh]">
+          <DialogTitle className="sr-only">{property.title}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {property.description || `Details for ${property.title} in ${address}`}
+          </DialogDescription>
           <div className="flex items-center justify-between border-b border-emerald-100 bg-white px-4 py-3">
             <div className="flex items-center gap-3">
               <Button

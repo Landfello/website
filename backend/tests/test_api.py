@@ -127,6 +127,18 @@ def test_signup_agent_and_investor(client):
     assert agent.status_code == 200
     assert agent.json()["user"]["profile"]["accountType"] == "agent"
 
+    agent_no_license = client.post(
+        "/api/auth/signup",
+        json={
+            "email": "agentnolics@test.com",
+            "password": "password123",
+            "accountType": "agent",
+            "firstName": "NoLics",
+        },
+    )
+    assert agent_no_license.status_code == 200
+    assert agent_no_license.json()["user"]["profile"]["accountType"] == "agent"
+
     buyer = client.post(
         "/api/auth/signup",
         json={

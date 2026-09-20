@@ -336,7 +336,7 @@ function SignInModal({ isOpen, onClose, navigate }: { isOpen: boolean; onClose: 
     setError("");
     try {
       setLoading(true);
-      const profile = await login(email, password);
+      const profile = await login(email.trim(), password);
       onClose();
       navigate(homePathForRole(profile.accountType));
     } catch (err: any) {
