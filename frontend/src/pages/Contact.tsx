@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Mail, Phone, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
