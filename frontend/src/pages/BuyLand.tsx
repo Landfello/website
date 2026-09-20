@@ -148,8 +148,14 @@ function ListingTile({
         {/* Content Section */}
         <div className="p-3">
           {/* Title */}
-          <div className="text-lg font-semibold text-gray-900 mb-1.5 line-clamp-2">
+          <div className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
             {l.title}
+          </div>
+
+          <div className="text-lg font-bold text-emerald-950 mb-1.5">
+            {l.priceUSD > 0
+              ? `$${l.priceUSD.toLocaleString()}`
+              : "Price on request"}
           </div>
 
           {/* Specifications */}
