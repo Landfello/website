@@ -10,10 +10,10 @@ import {
   ShieldCheck,
   Sparkles,
   Phone,
+  Check,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Property } from "@/services/propertyService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,11 +42,13 @@ export function PropertyDetailsDialog({
   const { currentUser } = useAuth();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showCallDialog, setShowCallDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (open && property) {
       setActiveImageIndex(0);
       setShowCallDialog(false);
+      setCopied(false);
     }
   }, [open, property]);
 
@@ -63,6 +65,18 @@ export function PropertyDetailsDialog({
     setShowCallDialog(true);
   };
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      window.prompt("Copy this link:", url);
+    }
+  };
+
   const images =
     property.images && property.images.length > 0
       ? property.images
@@ -72,6 +86,12 @@ export function PropertyDetailsDialog({
 
   const address = `${property.neighborhood ? `${property.neighborhood}, ` : ""}${property.city}, ${property.country}`;
   const listingType = property.listingType === "sale" ? "For sale" : "For rent";
+  const priceLabel =
+    property.listingType === "sale" && property.price
+      ? `$${property.price.toLocaleString()}`
+      : property.listingType === "rent" && property.monthlyRent
+        ? `$${property.monthlyRent.toLocaleString()}/mo`
+        : null;
 
   const facts = [
     { label: "Property type", value: property.propertyType },
@@ -111,8 +131,9 @@ export function PropertyDetailsDialog({
               >
                 <Heart className={`h-4 w-4 ${saved ? "fill-red-600 text-red-600" : ""}`} /> Save
               </Button>
-              <Button variant="ghost" className="gap-2 rounded-full">
-                <Share2 className="h-4 w-4" /> Share
+              <Button variant="ghost" className="gap-2 rounded-full" onClick={handleShare}>
+                {copied ? <Check className="h-4 w-4 text-emerald-700" /> : <Share2 className="h-4 w-4" />}
+                {copied ? "Copied" : "Share"}
               </Button>
             </div>
           </div>
@@ -120,12 +141,46 @@ export function PropertyDetailsDialog({
           <div className="grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
             <div className="lg:col-span-8 bg-white overflow-y-auto max-h-[calc(85vh-60px)]">
               <div className="relative p-4">
-                {images.length > 0 && (
-                  <div
-                    className="grid grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-xl"
-                    style={{ height: "280px" }}
-                  >
-                    <div className="relative col-span-2 row-span-2">
+                {images.length === 1 ? (
+                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-emerald-50">
+                    <img
+                      src={images[0]}
+                      alt="Main property view"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute left-3 top-3">
+                      <Badge className="rounded-full bg-emerald-900/90 text-emerald-50">
+                        {listingType}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : images.length === 2 ? (
+                  <div className="grid grid-cols-2 gap-2 overflow-hidden rounded-xl" style={{ height: "320px" }}>
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="relative h-full min-h-0 overflow-hidden"
+                        onClick={() => setActiveImageIndex(idx)}
+                      >
+                        <img
+                          src={img}
+                          alt={`Property view ${idx + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        {idx === 0 ? (
+                          <div className="absolute left-3 top-3">
+                            <Badge className="rounded-full bg-emerald-900/90 text-emerald-50">
+                              {listingType}
+                            </Badge>
+                          </div>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 overflow-hidden rounded-xl" style={{ height: "320px" }}>
+                    <div className="relative h-full min-h-0">
                       <img
                         src={images[activeImageIndex] || images[0]}
                         alt="Main property view"
@@ -136,35 +191,40 @@ export function PropertyDetailsDialog({
                           {listingType}
                         </Badge>
                       </div>
-                      {images.length > 1 && (
-                        <div className="absolute bottom-2 right-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="rounded-lg bg-white/90 hover:bg-white text-xs h-7 px-2"
-                            onClick={() =>
-                              setActiveImageIndex((prev) => (prev + 1) % images.length)
-                            }
-                          >
-                            {images.length} photos
-                          </Button>
-                        </div>
-                      )}
+                      <div className="absolute bottom-2 right-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="rounded-lg bg-white/90 hover:bg-white text-xs h-7 px-2"
+                          onClick={() =>
+                            setActiveImageIndex((prev) => (prev + 1) % images.length)
+                          }
+                        >
+                          {images.length} photos
+                        </Button>
+                      </div>
                     </div>
-                    {images.slice(1, 5).map((img, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="relative overflow-hidden"
-                        onClick={() => setActiveImageIndex(idx + 1)}
-                      >
-                        <img
-                          src={img}
-                          alt={`Property view ${idx + 2}`}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    ))}
+                    <div className="grid grid-rows-2 gap-2 h-full min-h-0">
+                      {images.slice(1, 3).map((img, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="relative h-full min-h-0 overflow-hidden"
+                          onClick={() => setActiveImageIndex(idx + 1)}
+                        >
+                          <img
+                            src={img}
+                            alt={`Property view ${idx + 2}`}
+                            className="h-full w-full object-cover"
+                          />
+                          {idx === 1 && images.length > 3 ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm font-semibold text-white">
+                              +{images.length - 3} more
+                            </div>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -181,6 +241,9 @@ export function PropertyDetailsDialog({
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
+                    <span className="text-xs text-emerald-700">
+                      {activeImageIndex + 1} / {images.length}
+                    </span>
                     <Button
                       variant="outline"
                       size="icon"
@@ -241,49 +304,56 @@ export function PropertyDetailsDialog({
               </div>
             </div>
 
-            <div className="lg:col-span-4 border-l border-emerald-100 bg-emerald-50 overflow-y-auto max-h-[calc(85vh-60px)]">
+            <div className="lg:col-span-4 border-l border-emerald-100 bg-white overflow-y-auto max-h-[calc(85vh-60px)]">
               <ScrollArea className="h-full">
-                <div className="space-y-4 p-4">
-                  <Card className="rounded-2xl">
-                    <CardContent className="space-y-3 p-4">
-                      {property.status === "sold" ? (
-                        <Button className="w-full" disabled>
-                          Sold
-                        </Button>
-                      ) : canBuy ? (
-                        <Button
-                          className="w-full bg-emerald-700 hover:bg-emerald-800 gap-2"
-                          onClick={handleBuyLand}
-                        >
-                          <Phone className="h-4 w-4" />
-                          Buy land
-                        </Button>
-                      ) : null}
-                      <div className="text-xs text-emerald-700">
-                        Tap Buy land to get the Landfello phone number and call to complete your
-                        purchase.
+                <div className="space-y-6 p-5">
+                  <div className="space-y-3">
+                    {priceLabel ? (
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-emerald-700/70">
+                          Asking price
+                        </div>
+                        <div className="mt-0.5 text-2xl font-semibold text-emerald-950">
+                          {priceLabel}
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    ) : null}
 
-                  <Card className="rounded-2xl border-emerald-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-950">
-                        <ShieldCheck className="h-4 w-4" /> Verified details
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        {facts.map((f) => (
-                          <div
-                            key={f.label}
-                            className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm"
-                          >
-                            <span className="text-emerald-700">{f.label}</span>
-                            <span className="font-medium text-emerald-950">{f.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                    {property.status === "sold" ? (
+                      <Button className="w-full h-11 rounded-xl" disabled>
+                        Sold
+                      </Button>
+                    ) : canBuy ? (
+                      <Button
+                        className="w-full h-11 rounded-xl bg-emerald-800 hover:bg-emerald-900 gap-2 text-base font-semibold"
+                        onClick={handleBuyLand}
+                      >
+                        <Phone className="h-4 w-4" />
+                        Buy land
+                      </Button>
+                    ) : null}
+
+                    {canBuy && property.status !== "sold" ? (
+                      <p className="text-xs leading-relaxed text-emerald-700/80">
+                        We’ll share the Landfello number so you can call and complete the purchase.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-emerald-950">
+                      <ShieldCheck className="h-4 w-4 text-emerald-700" />
+                      Verified details
+                    </div>
+                    <dl className="mt-3 divide-y divide-emerald-100 border-t border-b border-emerald-100">
+                      {facts.map((f) => (
+                        <div key={f.label} className="flex items-center justify-between py-2.5 text-sm">
+                          <dt className="text-emerald-700">{f.label}</dt>
+                          <dd className="font-medium text-emerald-950">{f.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
                 </div>
               </ScrollArea>
             </div>

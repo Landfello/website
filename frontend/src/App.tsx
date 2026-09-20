@@ -12,6 +12,9 @@ import MyProperties from './pages/MyProperties';
 import EditProperty from './pages/EditProperty';
 import Settings from './pages/Settings';
 import Sell from './pages/Sell';
+import Legal from './pages/Legal';
+import FAQ from './pages/FAQ';
+import Contact from './pages/Contact';
 import OwnerListingEntry from './pages/ownerListing/OwnerListingEntry';
 import OwnerListingFlow from './pages/ownerListing/OwnerListingFlow';
 import OwnerListingReview from './pages/ownerListing/OwnerListingReview';
@@ -69,6 +72,9 @@ function App() {
             <Route path="/partner-program" element={<SavingsProgram />} />
             <Route path="/savings-program" element={<SavingsProgram />} />
             <Route path="/about" element={<About />} />
+            <Route path="/legal" element={<Legal />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/buy" element={<BuyLand />} />
             <Route path="/buy-land" element={<BuyLand />} />
             <Route path="/add-property" element={<AddProperty />} />

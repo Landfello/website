@@ -111,11 +111,13 @@ function ListingTile({
   l,
   saved,
   onToggleSave,
+  onShare,
   onClick,
 }: {
   l: Listing;
   saved: boolean;
   onToggleSave: (id: string) => void;
+  onShare: (id: string) => void;
   onClick: () => void;
 }) {
   const address = `${l.neighborhood ? `${l.neighborhood}, ` : ""}${l.city}, ${l.country}`;
@@ -186,12 +188,19 @@ function ListingTile({
               type="button"
               className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
               aria-label="Share"
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(l.id);
+              }}
             >
               <Share2 className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => onToggleSave(l.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSave(l.id);
+              }}
               className={`flex items-center gap-1 transition-colors ${
                 saved
                   ? "text-red-600 hover:text-red-700"
@@ -231,7 +240,14 @@ export default function LandfelloBuyPage() {
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [freeholdOnly, setFreeholdOnly] = useState(false);
 
-  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [savedIds, setSavedIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("landfello_saved_properties");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
   
   // Properties from Cosmos DB
   const [properties, setProperties] = useState<Property[]>([]);
@@ -243,7 +259,40 @@ export default function LandfelloBuyPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const toggleSave = (id: string) => {
-    setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSavedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      localStorage.setItem("landfello_saved_properties", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const shareProperty = async (id: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("property", id);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+    } catch {
+      window.prompt("Copy this link:", url.toString());
+    }
+  };
+
+  const openProperty = (property: Property) => {
+    setSelectedProperty(property);
+    setDialogOpen(true);
+    const next = new URLSearchParams(searchParams);
+    if (property.propertyID) {
+      next.set("property", property.propertyID);
+      setSearchParams(next, { replace: true });
+    }
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("property");
+      setSearchParams(next, { replace: true });
+    }
   };
 
   // Read country from URL parameter on mount
@@ -253,6 +302,18 @@ export default function LandfelloBuyPage() {
       setCountryFilter(countryParam);
     }
   }, [searchParams]);
+
+  // Open property from ?property= URL (shared links)
+  useEffect(() => {
+    if (loading || properties.length === 0) return;
+    const propertyId = searchParams.get("property");
+    if (!propertyId) return;
+    const match = properties.find((p) => p.propertyID === propertyId);
+    if (match) {
+      setSelectedProperty(match);
+      setDialogOpen(true);
+    }
+  }, [loading, properties, searchParams]);
 
   // Fetch properties from Cosmos DB
   useEffect(() => {
@@ -620,12 +681,11 @@ export default function LandfelloBuyPage() {
                   l={l} 
                   saved={savedIds.includes(l.id)} 
                   onToggleSave={toggleSave}
+                  onShare={shareProperty}
                   onClick={() => {
-                    // Find the full property object from properties array
                     const fullProperty = properties.find(p => p.propertyID === l.id);
                     if (fullProperty) {
-                      setSelectedProperty(fullProperty);
-                      setDialogOpen(true);
+                      openProperty(fullProperty);
                     }
                   }}
                 />
@@ -655,7 +715,7 @@ export default function LandfelloBuyPage() {
       {/* Property Details Dialog */}
       <PropertyDetailsDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogOpenChange}
         property={selectedProperty}
         onSave={(propertyId) => toggleSave(propertyId)}
         saved={selectedProperty ? savedIds.includes(selectedProperty.propertyID || "") : false}

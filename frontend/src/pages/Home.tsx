@@ -855,7 +855,13 @@ export default function LandfelloUIPreview() {
               >
                 Start now
               </Button>
-              <Button variant="secondary" className="rounded-2xl bg-white/10 text-white hover:bg-white/15">Talk to an expert</Button>
+              <Button
+                variant="secondary"
+                className="rounded-2xl bg-white/10 text-white hover:bg-white/15"
+                onClick={() => navigate('/contact')}
+              >
+                Talk to an expert
+              </Button>
             </div>
           </div>
         </div>
@@ -877,9 +883,27 @@ export default function LandfelloUIPreview() {
             >
               How it works
             </button>
-            <a className="hover:text-emerald-950" href="#">Legal</a>
-            <a className="hover:text-emerald-950" href="#">FAQs</a>
-            <a className="hover:text-emerald-950" href="#">Contact</a>
+            <button
+              type="button"
+              onClick={() => navigate('/legal')}
+              className="hover:text-emerald-950 text-sm text-emerald-950/70 bg-transparent border-none cursor-pointer p-0 text-left"
+            >
+              Legal
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/faq')}
+              className="hover:text-emerald-950 text-sm text-emerald-950/70 bg-transparent border-none cursor-pointer p-0 text-left"
+            >
+              FAQs
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/contact')}
+              className="hover:text-emerald-950 text-sm text-emerald-950/70 bg-transparent border-none cursor-pointer p-0 text-left"
+            >
+              Contact
+            </button>
           </div>
           <div className="text-sm text-emerald-950/60">
             <div className="font-semibold text-emerald-950">Quick note</div>
