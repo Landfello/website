@@ -35,11 +35,22 @@ export default function MyProperties() {
 
     try {
       setLoading(true);
-      // Always show only the user's own properties
+      setError("");
       const userProperties = await getUserProperties(currentUser.uid);
       setProperties(userProperties);
     } catch (err: any) {
-      setError(err.message || "Failed to load properties");
+      const msg = String(err?.message || "").toLowerCase();
+      const isEmptyAccount =
+        msg.includes("user not found") ||
+        msg.includes("not found") ||
+        msg.includes("authentication required") ||
+        msg.includes("invalid or expired");
+      if (isEmptyAccount) {
+        setProperties([]);
+        setError("");
+      } else {
+        setError(err.message || "Failed to load properties");
+      }
     } finally {
       setLoading(false);
     }
