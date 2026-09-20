@@ -641,10 +641,13 @@ function Step3Ownership({
         ))}
       </div>
 
-      {o.multipleOwners === "yes" ? (
+      {o.multipleOwners !== "no" ? (
         <div className={sectionClass}>
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-emerald-950">Co-owners</p>
+            <div>
+              <p className="text-sm font-medium text-emerald-950">Co-owners</p>
+              <p className="text-xs text-emerald-950/55">Optional — skip this if you are the sole owner.</p>
+            </div>
             <Button
               type="button"
               variant="outline"
@@ -658,7 +661,7 @@ function Step3Ownership({
           </div>
           {o.coOwners.length === 0 ? (
             <p className="text-sm text-emerald-950/55">
-              Add each co-owner and their share of ownership.
+              If there are co-owners, add each person and their share of ownership.
             </p>
           ) : (
             <ul className="space-y-4">
@@ -1787,12 +1790,6 @@ export function validateStep(
       if (!draft.ownership.method) return "Select how ownership was acquired.";
       if (!draft.ownership.nameOnRecord.trim())
         return "Enter the name on the title / record.";
-      if (draft.ownership.multipleOwners === "yes") {
-        if (draft.ownership.coOwners.length === 0)
-          return "Add at least one co-owner.";
-        if (draft.ownership.coOwners.some((c) => !c.fullName.trim()))
-          return "Enter a full name for each co-owner.";
-      }
       return null;
     }
     case 4: {
