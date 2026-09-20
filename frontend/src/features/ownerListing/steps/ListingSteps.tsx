@@ -1088,17 +1088,6 @@ function Step6Boundaries({
         </Field>
       </div>
 
-      <div className={sectionClass}>
-        <FileUploadZone
-          label="Survey uploads"
-          hint="Optional. Upload site plans, cadastral plans, or survey reports if you have them."
-          files={b.surveyUploads.map(toUploadItem)}
-          onChange={(items) =>
-            setBoundaries({ surveyUploads: items.map(fromUploadItem) })
-          }
-        />
-      </div>
-
       <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Boundary information is provided by the seller and reviewed by Landfello.
         Buyers should still commission an independent survey before closing.
