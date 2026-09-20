@@ -5,6 +5,7 @@ import { StepperShell } from "@/features/ownerListing/components";
 import {
   ListingStepContent,
   validateStep,
+  withoutEmptyCoOwners,
 } from "@/features/ownerListing/steps/ListingSteps";
 import { getListing, saveListing } from "@/features/ownerListing/store";
 import { STEP_META, type OwnerListingDraft } from "@/features/ownerListing/types";
@@ -31,7 +32,16 @@ export default function OwnerListingFlow() {
       Number.isFinite(stepFromQuery) && stepFromQuery >= 1 && stepFromQuery <= 10
         ? stepFromQuery
         : listing.currentStep;
-    setDraft({ ...listing, currentStep: nextStep });
+    setDraft({
+      ...listing,
+      currentStep: nextStep,
+      ownership: {
+        ...listing.ownership,
+        coOwners: listing.ownership.coOwners.filter(
+          (c) => c.fullName.trim() || (c.email ?? "").trim(),
+        ),
+      },
+    });
   }, [id, navigate, stepFromQuery]);
 
   const stepMeta = useMemo(() => {
@@ -103,20 +113,21 @@ export default function OwnerListingFlow() {
 
   const onContinue = () => {
     if (!draft) return;
-    const error = validateStep(draft.currentStep, draft);
+    const sanitized = withoutEmptyCoOwners(draft);
+    const error = validateStep(sanitized.currentStep, sanitized);
     if (error) {
       setValidationError(error);
       return;
     }
     setValidationError(null);
 
-    if (draft.currentStep >= 10) {
-      persist(draft);
-      navigate(`/sell/owner/listing/${draft.id}/review`);
+    if (sanitized.currentStep >= 10) {
+      persist(sanitized);
+      navigate(`/sell/owner/listing/${sanitized.id}/review`);
       return;
     }
 
-    const next = { ...draft, currentStep: draft.currentStep + 1 };
+    const next = { ...sanitized, currentStep: sanitized.currentStep + 1 };
     persist(next);
     setSearchParams({ step: String(next.currentStep) }, { replace: true });
   };

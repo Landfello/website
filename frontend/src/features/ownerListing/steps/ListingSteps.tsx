@@ -163,6 +163,18 @@ function newCoOwner(): CoOwner {
   };
 }
 
+export function withoutEmptyCoOwners(draft: OwnerListingDraft): OwnerListingDraft {
+  return {
+    ...draft,
+    ownership: {
+      ...draft.ownership,
+      coOwners: draft.ownership.coOwners.filter(
+        (c) => c.fullName.trim() || (c.email ?? "").trim(),
+      ),
+    },
+  };
+}
+
 function newPhotoId() {
   return `photo_${crypto.randomUUID()}`;
 }
@@ -520,8 +532,13 @@ function Step3Ownership({
   const setOwnership = (patch: Partial<typeof o>) =>
     update(onChange, { ownership: { ...o, ...patch } });
 
-  const setTri = (key: keyof typeof o, value: YesNoUnknownValue) =>
+  const setTri = (key: keyof typeof o, value: YesNoUnknownValue) => {
+    if (key === "multipleOwners" && value === "no") {
+      setOwnership({ multipleOwners: value, coOwners: [] });
+      return;
+    }
     setOwnership({ [key]: value } as Partial<typeof o>);
+  };
 
   const updateCoOwner = (id: string, patch: Partial<CoOwner>) => {
     setOwnership({
@@ -641,27 +658,40 @@ function Step3Ownership({
         ))}
       </div>
 
-      {o.multipleOwners !== "no" ? (
-        <div className={sectionClass}>
-          <div className="flex items-center justify-between gap-3">
+      <div className={sectionClass}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-emerald-950">Co-owners</p>
-              <p className="text-xs text-emerald-950/55">Optional — skip this if you are the sole owner.</p>
+              <p className="text-xs text-emerald-950/55">
+                Optional. Leave this blank if you are the only owner.
+              </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-2xl"
-              onClick={() =>
-                setOwnership({ coOwners: [...o.coOwners, newCoOwner()] })
-              }
-            >
-              Add co-owner
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-2xl"
+                onClick={() =>
+                  setOwnership({ multipleOwners: "no", coOwners: [] })
+                }
+              >
+                I don’t have co-owners
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-2xl"
+                onClick={() =>
+                  setOwnership({ coOwners: [...o.coOwners, newCoOwner()] })
+                }
+              >
+                Add co-owner
+              </Button>
+            </div>
           </div>
           {o.coOwners.length === 0 ? (
             <p className="text-sm text-emerald-950/55">
-              If there are co-owners, add each person and their share of ownership.
+              You can continue without adding anyone.
             </p>
           ) : (
             <ul className="space-y-4">
@@ -742,7 +772,6 @@ function Step3Ownership({
             </ul>
           )}
         </div>
-      ) : null}
     </div>
   );
 }

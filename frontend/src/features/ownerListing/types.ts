@@ -388,7 +388,7 @@ function emptyOwnership(): OwnerListingOwnership {
     surveyNumber: "",
     registryOffice: "",
     nameMatches: "unknown",
-    multipleOwners: "unknown",
+    multipleOwners: "no",
     spouseConsent: "unknown",
     customary: "unknown",
     authorityApproval: "unknown",
