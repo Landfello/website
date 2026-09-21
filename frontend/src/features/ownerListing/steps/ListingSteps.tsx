@@ -1423,12 +1423,14 @@ function Step9Pricing({
   return (
     <div className="space-y-6">
       <div className={`${sectionClass} grid gap-4 sm:grid-cols-2`}>
-        <Field label="Asking price (optional)" htmlFor="askingPrice">
+        <Field label="Asking price" required htmlFor="askingPrice">
           <Input
             id="askingPrice"
             type="number"
             min={0}
+            required
             className={inputClass}
+            placeholder="Buyers will see this price"
             value={p.askingPrice ?? ""}
             onChange={(e) =>
               setPricing({
@@ -1827,8 +1829,8 @@ export function validateStep(
       return null;
     }
     case 9: {
-      if (draft.pricing.askingPrice != null && draft.pricing.askingPrice < 0)
-        return "Enter a valid asking price.";
+      if (draft.pricing.askingPrice == null || Number.isNaN(draft.pricing.askingPrice) || draft.pricing.askingPrice < 0)
+        return "Enter a valid asking price so buyers can see it on your listing.";
       if (!draft.pricing.currency) return "Select a currency.";
       if (!draft.pricing.escrowChoice) return "Select an escrow preference.";
       return null;

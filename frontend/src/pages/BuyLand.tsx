@@ -17,6 +17,7 @@ import { ListingTile, propertyToListing } from "@/components/ListingTile";
 import { getAllProperties, Property } from "@/services/propertyService";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useRoleGate } from "@/hooks/useRoleGate";
+import { getSavedPropertyIds, toggleSavedPropertyId } from "@/lib/savedProperties";
 
 const HOME_TYPES = [
   { key: "Residential", label: "Residential" },
@@ -80,18 +81,12 @@ export default function LandfelloBuyPage() {
   const [maxPrice, setMaxPrice] = useState("");
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [freeholdOnly, setFreeholdOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(() => searchParams.get("saved") === "1");
   const [moreOpen, setMoreOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc">("newest");
   const [view, setView] = useState<"grid" | "list">("grid");
 
-  const [savedIds, setSavedIds] = useState<string[]>(() => {
-    try {
-      const raw = localStorage.getItem("landfello_saved_properties");
-      return raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [savedIds, setSavedIds] = useState<string[]>(() => getSavedPropertyIds());
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,11 +95,8 @@ export default function LandfelloBuyPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const toggleSave = (id: string) => {
-    setSavedIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      localStorage.setItem("landfello_saved_properties", JSON.stringify(next));
-      return next;
-    });
+    if (!id) return;
+    setSavedIds(toggleSavedPropertyId(id));
   };
 
   const shareProperty = async (id: string) => {
@@ -139,6 +131,7 @@ export default function LandfelloBuyPage() {
   useEffect(() => {
     const countryParam = searchParams.get("country");
     if (countryParam) setCountryFilter(countryParam);
+    setSavedOnly(searchParams.get("saved") === "1");
   }, [searchParams]);
 
   useEffect(() => {
@@ -191,6 +184,7 @@ export default function LandfelloBuyPage() {
       if (propertyType !== "all" && l.landType !== propertyType) return false;
       if (onlyVerified && !l.verified) return false;
       if (freeholdOnly && l.tenure !== "Freehold") return false;
+      if (savedOnly && !savedIds.includes(l.id)) return false;
       const amount = l.listingType === "rent" ? l.monthlyRent : l.priceUSD;
       if (min != null && !Number.isNaN(min) && amount > 0 && amount < min) return false;
       if (max != null && !Number.isNaN(max) && amount > max) return false;
@@ -217,6 +211,8 @@ export default function LandfelloBuyPage() {
     propertyType,
     onlyVerified,
     freeholdOnly,
+    savedOnly,
+    savedIds,
     minPrice,
     maxPrice,
     sortBy,
@@ -226,6 +222,7 @@ export default function LandfelloBuyPage() {
     setCountryFilter("");
     setSearchParams((prev) => {
       prev.delete("country");
+      prev.delete("saved");
       return prev;
     });
     setListingKind("sale");
@@ -235,7 +232,17 @@ export default function LandfelloBuyPage() {
     setMaxPrice("");
     setOnlyVerified(false);
     setFreeholdOnly(false);
+    setSavedOnly(false);
     setQuery("");
+  };
+
+  const setSavedFilter = (on: boolean) => {
+    setSavedOnly(on);
+    setSearchParams((prev) => {
+      if (on) prev.set("saved", "1");
+      else prev.delete("saved");
+      return prev;
+    });
   };
 
   return (
@@ -405,6 +412,10 @@ export default function LandfelloBuyPage() {
                   <Checkbox checked={freeholdOnly} onCheckedChange={(v) => setFreeholdOnly(Boolean(v))} />
                   Freehold only
                 </label>
+                <label className="flex items-center gap-2 text-sm text-emerald-950">
+                  <Checkbox checked={savedOnly} onCheckedChange={(v) => setSavedFilter(Boolean(v))} />
+                  Saved only
+                </label>
               </div>
             ) : null}
 
@@ -503,9 +514,13 @@ export default function LandfelloBuyPage() {
 
               {filtered.length === 0 ? (
                 <div className="mt-6 rounded-3xl border border-black/5 bg-white p-10 text-center">
-                  <div className="text-lg font-semibold text-emerald-950">No matches</div>
+                  <div className="text-lg font-semibold text-emerald-950">
+                    {savedOnly ? "No saved properties yet" : "No matches"}
+                  </div>
                   <div className="mt-1 text-sm text-emerald-950/60">
-                    Try adjusting filters or searching a different city/country.
+                    {savedOnly
+                      ? "Tap Save on a listing to bookmark it here."
+                      : "Try adjusting filters or searching a different city/country."}
                   </div>
                   <Button
                     type="button"

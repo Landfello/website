@@ -217,9 +217,9 @@ export default function About() {
                 </p>
                 <Button
                   className="w-full rounded-2xl bg-emerald-900 text-white hover:bg-emerald-900/90"
-                  onClick={() => navigate('/how-it-works')}
+                  onClick={() => navigate('/buy')}
                 >
-                  Learn how it works <ArrowRight className="h-4 w-4 ml-2" />
+                  Browse listings <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </CardContent>
             </Card>
@@ -246,9 +246,9 @@ export default function About() {
               <Button
                 variant="secondary"
                 className="rounded-2xl bg-white/10 text-white hover:bg-white/15"
-                onClick={() => navigate('/how-it-works')}
+                onClick={() => navigate('/faq')}
               >
-                How it works
+                Resources
               </Button>
             </div>
           </div>

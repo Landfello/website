@@ -50,19 +50,22 @@ function Field({
 
 export default function AddProperty() {
   const navigate = useNavigate();
-  const { currentUser, loading: authLoading } = useAuth();
+  const { currentUser, userProfile, loading: authLoading } = useAuth();
   const [listingType, setListingType] = useState<"sale" | "rent">("sale");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Only agents can list land on the marketplace
+  // Only agent accounts can list properties on the marketplace
   useEffect(() => {
-    if (!authLoading) {
-      if (!currentUser) {
-        navigate("/create-account");
-      }
+    if (authLoading) return;
+    if (!currentUser) {
+      navigate("/create-account");
+      return;
     }
-  }, [currentUser, authLoading, navigate]);
+    if (userProfile?.accountType !== "agent") {
+      navigate("/buy", { replace: true });
+    }
+  }, [currentUser, userProfile, authLoading, navigate]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -201,8 +204,7 @@ export default function AddProperty() {
       return;
     }
 
-    // Allow both agents and investors to list properties
-    // No restriction needed
+    // Only agents reach this form (gated above)
 
     // Validate required fields
     if (!formData.title || !formData.description || !formData.country || !formData.city) {
@@ -212,6 +214,17 @@ export default function AddProperty() {
 
     if (formData.images.length < 2) {
       setError("Please upload at least 2 images of the property");
+      return;
+    }
+
+    const salePrice = listingType === "sale" ? parseFloat(formData.price) : undefined;
+    const rentPrice = listingType === "rent" ? parseFloat(formData.monthlyRent) : undefined;
+    if (listingType === "sale" && (salePrice === undefined || Number.isNaN(salePrice) || salePrice < 0)) {
+      setError("Please enter a valid asking price so buyers can see it on your listing");
+      return;
+    }
+    if (listingType === "rent" && (rentPrice === undefined || Number.isNaN(rentPrice) || rentPrice < 0)) {
+      setError("Please enter a valid monthly rent so buyers can see it on your listing");
       return;
     }
 
@@ -230,8 +243,8 @@ export default function AddProperty() {
         areaAcres: parseFloat(formData.areaAcres) || 0,
         tenure: listingType === "sale" ? (formData.tenure as "Freehold" | "Leasehold") : undefined,
         leaseTerm: listingType === "rent" ? (formData.leaseTerm as "Short-term" | "Long-term" | "Flexible") : undefined,
-        price: listingType === "sale" ? parseFloat(formData.price) || undefined : undefined,
-        monthlyRent: listingType === "rent" ? parseFloat(formData.monthlyRent) || undefined : undefined,
+        price: listingType === "sale" ? salePrice : undefined,
+        monthlyRent: listingType === "rent" ? rentPrice : undefined,
         tags: formData.tags,
         images: formData.images,
         contactName: formData.contactName,
@@ -460,7 +473,8 @@ export default function AddProperty() {
               <Field
                 label="Asking price (USD)"
                 icon={<DollarSign className="h-4 w-4" />}
-                hint="Optional. Leave blank to show Price on request."
+                hint="This is the price buyers will see on your listing card."
+                required
               >
                 <Input
                   type="number"
@@ -470,6 +484,7 @@ export default function AddProperty() {
                   placeholder="e.g. 52000"
                   min="0"
                   step="1"
+                  required
                   className="w-full rounded-2xl pl-9"
                 />
               </Field>
@@ -477,7 +492,8 @@ export default function AddProperty() {
               <Field
                 label="Monthly rent (USD)"
                 icon={<DollarSign className="h-4 w-4" />}
-                hint="Optional. Leave blank to show Price on request."
+                hint="This is the rent buyers will see on your listing card."
+                required
               >
                 <Input
                   type="number"
@@ -487,6 +503,7 @@ export default function AddProperty() {
                   placeholder="e.g. 1200"
                   min="0"
                   step="1"
+                  required
                   className="w-full rounded-2xl pl-9"
                 />
               </Field>

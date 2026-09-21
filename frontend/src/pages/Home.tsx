@@ -12,6 +12,7 @@ import { homePathForRole } from "@/lib/roles";
 import { ListingTile, propertyToListing } from "@/components/ListingTile";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { getAllProperties, type Property } from "@/services/propertyService";
+import { getSavedPropertyIds, toggleSavedPropertyId } from "@/lib/savedProperties";
 
 // Landfello — UI Preview (single-file)
 
@@ -485,14 +486,7 @@ export default function LandfelloUIPreview() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [savedIds, setSavedIds] = useState<string[]>(() => {
-    try {
-      const raw = localStorage.getItem("landfello_saved_properties");
-      return raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [savedIds, setSavedIds] = useState<string[]>(() => getSavedPropertyIds());
 
   // Logged-in users skip marketing home — land on their role home
   useEffect(() => {
@@ -520,11 +514,8 @@ export default function LandfelloUIPreview() {
   }, []);
 
   const toggleSave = (id: string) => {
-    setSavedIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      localStorage.setItem("landfello_saved_properties", JSON.stringify(next));
-      return next;
-    });
+    if (!id) return;
+    setSavedIds(toggleSavedPropertyId(id));
   };
 
   const shareProperty = async (id: string) => {
@@ -568,25 +559,19 @@ export default function LandfelloUIPreview() {
               onClick={() => navigate('/buy')} 
               className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
             >
-              Buy Property
+              Buy
             </button>
             <button 
-              onClick={() => navigate('/create-account')} 
+              onClick={() => navigate('/faq')} 
               className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
             >
-              Sell as agent
-            </button>
-            <button 
-              onClick={() => navigate('/partner-program')} 
-              className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
-            >
-              Landfello Partner Program
+              Resources
             </button>
             <button 
               onClick={() => navigate('/about')} 
               className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
             >
-              How it works
+              About
             </button>
           </nav>
 
@@ -778,12 +763,9 @@ export default function LandfelloUIPreview() {
       {/* How it works */}
       <section id="how" className="mx-auto max-w-6xl px-4 pb-14">
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/how-it-works')}
-            className="text-2xl font-semibold text-emerald-950 hover:text-emerald-900 cursor-pointer transition-colors"
-          >
+          <h2 className="text-2xl font-semibold text-emerald-950">
             How it works
-          </button>
+          </h2>
         </div>
         <div className="grid lg:grid-cols-3 gap-4">
           {[ 
@@ -856,10 +838,10 @@ export default function LandfelloUIPreview() {
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm text-emerald-950/70">
             <button 
-              onClick={() => navigate('/how-it-works')} 
+              onClick={() => navigate('/about')} 
               className="hover:text-emerald-950 text-sm text-emerald-950/70 bg-transparent border-none cursor-pointer p-0 text-left"
             >
-              How it works
+              About
             </button>
             <button
               type="button"

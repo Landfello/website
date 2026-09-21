@@ -135,7 +135,8 @@ export function PropertyDetailsDialog({
                 className="gap-2 rounded-full"
                 onClick={() => onSave && property.propertyID && onSave(property.propertyID)}
               >
-                <Heart className={`h-4 w-4 ${saved ? "fill-red-600 text-red-600" : ""}`} /> Save
+                <Heart className={`h-4 w-4 ${saved ? "fill-red-600 text-red-600" : ""}`} />{" "}
+                {saved ? "Saved" : "Save"}
               </Button>
               <Button variant="ghost" className="gap-2 rounded-full" onClick={handleShare}>
                 {copied ? <Check className="h-4 w-4 text-emerald-700" /> : <Share2 className="h-4 w-4" />}

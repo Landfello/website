@@ -2,7 +2,7 @@ import { AccountType, getStoredUser } from "@/lib/session";
 
 /** Where a signed-in user should land after auth, by role. */
 export function homePathForRole(accountType?: AccountType | null): string {
-  if (accountType === "agent") return "/sell";
+  if (accountType === "agent") return "/my-properties";
   return "/buy";
 }
 
@@ -16,7 +16,7 @@ export function canAccessBuy(_accountType?: AccountType | null): boolean {
   return true;
 }
 
-/** Any signed-in account can list land. */
+/** Only agent accounts can list / manage properties for sale. */
 export function canAccessSell(accountType?: AccountType | null): boolean {
-  return Boolean(accountType);
+  return accountType === "agent";
 }

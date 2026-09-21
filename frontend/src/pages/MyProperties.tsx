@@ -90,10 +90,10 @@ export default function MyProperties() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-semibold text-gray-900">
-              Active Listings
+              Dashboard
             </h1>
             <p className="mt-2 text-sm text-gray-600">
-              Manage your property listings - add, edit, or delete
+              Manage your property listings — add, edit, or delete
             </p>
           </div>
           <Button
@@ -155,15 +155,15 @@ export default function MyProperties() {
 
                   {/* Content */}
                   <div className="p-4">
-                    <div className="text-xl font-semibold text-gray-900 mb-2">
+                    <div className="text-xl font-semibold text-gray-900 mb-1">
                       {property.title}
                     </div>
 
                     <div className="text-lg font-bold text-emerald-800 mb-1">
-                      {property.listingType === "rent" && property.monthlyRent
-                        ? `$${property.monthlyRent.toLocaleString()}/mo`
-                        : property.price
-                          ? `$${property.price.toLocaleString()}`
+                      {property.listingType === "rent" && property.monthlyRent != null
+                        ? `$${Number(property.monthlyRent).toLocaleString()}/mo`
+                        : property.price != null
+                          ? `$${Number(property.price).toLocaleString()}`
                           : "Price on request"}
                     </div>
 

@@ -173,7 +173,7 @@ export function ListingTile({
               }}
             >
               <Heart className={`h-3.5 w-3.5 ${saved ? "fill-red-500 text-red-500" : ""}`} />
-              Save
+              {saved ? "Saved" : "Save"}
             </button>
             <span className="ml-auto inline-flex items-center gap-1 text-emerald-800">
               View Details

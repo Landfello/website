@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ScrollToTop } from './components/ScrollToTop';
 import Home from './pages/Home';
 import SignUp from './pages/SignUp';
-import HowItWorks from './pages/HowItWorks';
 import SavingsProgram from './pages/SavingsProgram';
 import About from './pages/About';
 import BuyLand from './pages/BuyLand';
@@ -68,7 +67,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/create-account" element={<SignUp />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/how-it-works" element={<Navigate to="/about" replace />} />
             <Route path="/partner-program" element={<SavingsProgram />} />
             <Route path="/savings-program" element={<SavingsProgram />} />
             <Route path="/about" element={<About />} />

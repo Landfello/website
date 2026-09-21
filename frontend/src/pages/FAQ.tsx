@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "Can I list my land for sale?",
-    a: "Yes. Create a Real Estate Agent account, then use Sell / Add Property to upload at least two photos and your listing details.",
+    a: "Yes. Create a Real Estate Agent account, then use Dashboard → List a Property to upload at least two photos, set a price, and publish your listing.",
   },
   {
     q: "Which countries are supported?",

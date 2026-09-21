@@ -277,8 +277,20 @@ export default function EditProperty() {
         areaAcres: parseFloat(formData.areaAcres) || 0,
         tenure: listingType === "sale" ? (formData.tenure as "Freehold" | "Leasehold") : undefined,
         leaseTerm: listingType === "rent" ? (formData.leaseTerm as "Short-term" | "Long-term" | "Flexible") : undefined,
-        price: listingType === "sale" ? parseFloat(formData.price) : undefined,
-        monthlyRent: listingType === "rent" ? parseFloat(formData.monthlyRent) : undefined,
+        price:
+          listingType === "sale"
+            ? (() => {
+                const n = parseFloat(formData.price);
+                return Number.isFinite(n) ? n : undefined;
+              })()
+            : undefined,
+        monthlyRent:
+          listingType === "rent"
+            ? (() => {
+                const n = parseFloat(formData.monthlyRent);
+                return Number.isFinite(n) ? n : undefined;
+              })()
+            : undefined,
         tags: formData.tags,
         images: formData.images,
         contactName: formData.contactName,

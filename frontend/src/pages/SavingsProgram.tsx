@@ -169,7 +169,7 @@ export default function SavingsProgramPage() {
             <Button
               variant="ghost"
               className="rounded-2xl px-3 py-2 text-xs"
-              onClick={() => navigate("/sell")}
+              onClick={() => navigate("/create-account")}
             >
               List your land
             </Button>
@@ -233,7 +233,7 @@ export default function SavingsProgramPage() {
                 <Button
                   variant="outline"
                   className="rounded-2xl border-emerald-900/15 bg-white text-emerald-950"
-                  onClick={() => navigate("/sell/owner")}
+                  onClick={() => navigate("/create-account")}
                 >
                   I own land already
                 </Button>
@@ -444,7 +444,7 @@ export default function SavingsProgramPage() {
               <Button
                 variant="secondary"
                 className="rounded-2xl bg-white/10 text-white hover:bg-white/15"
-                onClick={() => navigate("/sell/owner")}
+                onClick={() => navigate("/create-account")}
               >
                 List my land first
               </Button>
@@ -462,11 +462,11 @@ export default function SavingsProgramPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm text-emerald-950/70">
-            <button onClick={() => navigate("/sell")} className="text-left hover:text-emerald-950">
-              Sell
+            <button onClick={() => navigate("/buy")} className="text-left hover:text-emerald-950">
+              Buy
             </button>
-            <button onClick={() => navigate("/how-it-works")} className="text-left hover:text-emerald-950">
-              How it works
+            <button onClick={() => navigate("/about")} className="text-left hover:text-emerald-950">
+              About
             </button>
             <button
               onClick={() => navigate("/create-account")}

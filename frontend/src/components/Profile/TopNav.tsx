@@ -9,9 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Settings, Plus } from "lucide-react";
+import { Heart, LayoutDashboard, LogOut, Plus, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
+import { homePathForRole } from "@/lib/roles";
 
 export function TopNav({ userName }: { userName?: string }) {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export function TopNav({ userName }: { userName?: string }) {
 
   const isAgent = userProfile?.accountType === "agent";
   const isMyPropertiesPage = location.pathname === "/my-properties";
+  const dashboardPath = homePathForRole(userProfile?.accountType);
 
   const initials =
     displayName
@@ -53,8 +55,6 @@ export function TopNav({ userName }: { userName?: string }) {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-emerald-900/80 ml-8">
           {[
             { label: "Buy", path: "/buy" },
-            { label: "Sell", path: "/sell" },
-            { label: "Explore", path: "/how-it-works" },
             { label: "Resources", path: "/faq" },
             { label: "About", path: "/about" },
           ].map((item) => (
@@ -80,10 +80,20 @@ export function TopNav({ userName }: { userName?: string }) {
         <div className="flex items-center gap-4 ml-auto">
           {currentUser ? (
             <>
-              {currentUser && !isMyPropertiesPage && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(dashboardPath)}
+                className="hidden sm:inline-flex rounded-lg border-emerald-900/20 text-emerald-900 hover:bg-emerald-50 px-4 py-1.5 text-sm font-medium gap-1.5"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Button>
+
+              {isAgent && !isMyPropertiesPage && (
                 <Button
                   type="button"
-                  onClick={() => navigate(isAgent ? "/add-property" : "/sell/owner")}
+                  onClick={() => navigate("/add-property")}
                   className="hidden sm:inline-flex rounded-lg bg-emerald-900 text-white hover:bg-emerald-900/90 px-4 py-1.5 text-sm font-medium gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
@@ -112,17 +122,27 @@ export function TopNav({ userName }: { userName?: string }) {
                         <div className="text-xs text-gray-500 font-normal">{userEmail}</div>
                       )}
                       <div className="mt-1 text-xs font-medium text-emerald-700 capitalize">
-                        {userProfile?.accountType === "agent" ? "Agent account" : "Buyer account"}
+                        {isAgent ? "Agent account" : "Buyer account"}
                       </div>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/buy")}>
                     Browse land
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/my-properties")}>
-                    My listings
+                  <DropdownMenuItem onClick={() => navigate("/buy?saved=1")}>
+                    <Heart className="h-4 w-4 mr-2" />
+                    Saved
                   </DropdownMenuItem>
+                  {isAgent && (
+                    <DropdownMenuItem onClick={() => navigate("/my-properties")}>
+                      My listings
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/settings")}>
                     <Settings className="h-4 w-4 mr-2" />
                     Settings
