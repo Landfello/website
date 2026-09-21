@@ -159,6 +159,14 @@ export default function MyProperties() {
                       {property.title}
                     </div>
 
+                    <div className="text-lg font-bold text-emerald-800 mb-1">
+                      {property.listingType === "rent" && property.monthlyRent
+                        ? `$${property.monthlyRent.toLocaleString()}/mo`
+                        : property.price
+                          ? `$${property.price.toLocaleString()}`
+                          : "Price on request"}
+                    </div>
+
                     <div className="text-sm text-emerald-800 mb-1">
                       {formatStatus(property)}
                     </div>

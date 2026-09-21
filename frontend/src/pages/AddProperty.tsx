@@ -50,7 +50,7 @@ function Field({
 
 export default function AddProperty() {
   const navigate = useNavigate();
-  const { currentUser, userProfile, loading: authLoading } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const [listingType, setListingType] = useState<"sale" | "rent">("sale");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -60,13 +60,9 @@ export default function AddProperty() {
     if (!authLoading) {
       if (!currentUser) {
         navigate("/create-account");
-        return;
-      }
-      if (userProfile?.accountType !== "agent") {
-        navigate("/buy");
       }
     }
-  }, [currentUser, userProfile, authLoading, navigate]);
+  }, [currentUser, authLoading, navigate]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -456,6 +452,45 @@ export default function AddProperty() {
                 </Field>
               )}
             </div>
+          </Card>
+
+          <Card className="rounded-[28px] bg-white/80 ring-1 ring-black/5 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-emerald-950 mb-4">Pricing</h2>
+            {listingType === "sale" ? (
+              <Field
+                label="Asking price (USD)"
+                icon={<DollarSign className="h-4 w-4" />}
+                hint="Optional. Leave blank to show Price on request."
+              >
+                <Input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  placeholder="e.g. 52000"
+                  min="0"
+                  step="1"
+                  className="w-full rounded-2xl pl-9"
+                />
+              </Field>
+            ) : (
+              <Field
+                label="Monthly rent (USD)"
+                icon={<DollarSign className="h-4 w-4" />}
+                hint="Optional. Leave blank to show Price on request."
+              >
+                <Input
+                  type="number"
+                  name="monthlyRent"
+                  value={formData.monthlyRent}
+                  onChange={handleChange}
+                  placeholder="e.g. 1200"
+                  min="0"
+                  step="1"
+                  className="w-full rounded-2xl pl-9"
+                />
+              </Field>
+            )}
           </Card>
 
           {/* Images Gallery */}

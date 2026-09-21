@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, LogOut, Settings, Plus } from "lucide-react";
+import { LogOut, Settings, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -50,39 +50,46 @@ export function TopNav({ userName }: { userName?: string }) {
       <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between">
         <BrandLogo size="sm" />
 
-        {/* Role is chosen at signup — no Buy/Sell discovery links in the app chrome */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-emerald-900/80 ml-8">
-          {isAgent && (
+          {[
+            { label: "Buy", path: "/buy" },
+            { label: "Sell", path: "/sell" },
+            { label: "Explore", path: "/how-it-works" },
+            { label: "Resources", path: "/faq" },
+            { label: "About", path: "/about" },
+          ].map((item) => (
             <button
+              key={item.path}
               type="button"
               onClick={() => {
                 window.scrollTo(0, 0);
-                navigate("/my-properties");
+                navigate(item.path);
               }}
-              className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
+              className={`relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-emerald-700 after:transition-all ${
+                location.pathname === item.path ||
+                (item.path === "/buy" && location.pathname === "/buy-land")
+                  ? "text-emerald-800 after:w-full"
+                  : "after:w-0 hover:after:w-full"
+              }`}
             >
-              My listings
+              {item.label}
             </button>
-          )}
+          ))}
         </nav>
 
         <div className="flex items-center gap-4 ml-auto">
           {currentUser ? (
             <>
-              {isAgent && !isMyPropertiesPage && (
+              {currentUser && !isMyPropertiesPage && (
                 <Button
                   type="button"
-                  onClick={() => navigate("/add-property")}
+                  onClick={() => navigate(isAgent ? "/add-property" : "/sell/owner")}
                   className="hidden sm:inline-flex rounded-lg bg-emerald-900 text-white hover:bg-emerald-900/90 px-4 py-1.5 text-sm font-medium gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
-                  List land
+                  List a Property
                 </Button>
               )}
-
-              <Button type="button" variant="ghost" className="rounded-2xl">
-                <Bell className="h-5 w-5 text-emerald-950/70" />
-              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -110,16 +117,12 @@ export function TopNav({ userName }: { userName?: string }) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {isAgent && (
-                    <DropdownMenuItem onClick={() => navigate("/my-properties")}>
-                      My listings
-                    </DropdownMenuItem>
-                  )}
-                  {userProfile?.accountType === "investor" && currentUser && (
-                    <DropdownMenuItem onClick={() => navigate("/buy")}>
-                      Browse land
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem onClick={() => navigate("/buy")}>
+                    Browse land
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/my-properties")}>
+                    My listings
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/settings")}>
                     <Settings className="h-4 w-4 mr-2" />
                     Settings

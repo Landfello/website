@@ -70,7 +70,7 @@ export function sectionComplete(draft: OwnerListingDraft, step: number): boolean
     case 8:
       return draft.media.photos.length > 0;
     case 9:
-      return draft.pricing.askingPrice != null;
+      return true;
     case 10:
       return (
         draft.disclosures.accurateInfoDeclared &&

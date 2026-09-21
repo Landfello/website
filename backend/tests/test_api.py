@@ -83,12 +83,12 @@ def test_agent_can_create_listing(client):
     assert body["status"] == "available"
 
 
-def test_buyer_cannot_create_listing(client):
+def test_buyer_can_create_listing(client):
     headers = auth_headers(client, SEED_BUYER_EMAIL)
     payload = {
         "listingType": "sale",
-        "title": "Should Fail",
-        "description": "x",
+        "title": "Investor Plot",
+        "description": "Listed by an investor",
         "country": "Ghana",
         "city": "Accra",
         "propertyType": "Residential",
@@ -101,7 +101,8 @@ def test_buyer_cannot_create_listing(client):
         "contactEmail": SEED_BUYER_EMAIL,
     }
     resp = client.post("/api/properties", json=payload, headers=headers)
-    assert resp.status_code == 403
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["price"] == 1000
 
 
 def test_property_detail_is_public(client):

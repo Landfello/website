@@ -1423,7 +1423,7 @@ function Step9Pricing({
   return (
     <div className="space-y-6">
       <div className={`${sectionClass} grid gap-4 sm:grid-cols-2`}>
-        <Field label="Asking price" required htmlFor="askingPrice">
+        <Field label="Asking price (optional)" htmlFor="askingPrice">
           <Input
             id="askingPrice"
             type="number"
@@ -1827,7 +1827,7 @@ export function validateStep(
       return null;
     }
     case 9: {
-      if (draft.pricing.askingPrice == null || draft.pricing.askingPrice <= 0)
+      if (draft.pricing.askingPrice != null && draft.pricing.askingPrice < 0)
         return "Enter a valid asking price.";
       if (!draft.pricing.currency) return "Select a currency.";
       if (!draft.pricing.escrowChoice) return "Select an escrow preference.";

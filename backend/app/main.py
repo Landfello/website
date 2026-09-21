@@ -136,8 +136,8 @@ def create_property(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if user.account_type != "agent":
-        raise HTTPException(status_code=403, detail="Only agents can list land for sale")
+    if user.account_type not in ("agent", "investor"):
+        raise HTTPException(status_code=403, detail="Sign in to list land for sale")
 
     prop = Property(
         property_id=str(uuid.uuid4()),

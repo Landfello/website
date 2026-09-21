@@ -87,11 +87,13 @@ export function PropertyDetailsDialog({
   const address = `${property.neighborhood ? `${property.neighborhood}, ` : ""}${property.city}, ${property.country}`;
   const listingType = property.listingType === "sale" ? "For sale" : "For rent";
   const priceLabel =
-    property.listingType === "sale" && property.price
-      ? `$${property.price.toLocaleString()}`
-      : property.listingType === "rent" && property.monthlyRent
+    property.listingType === "rent"
+      ? property.monthlyRent
         ? `$${property.monthlyRent.toLocaleString()}/mo`
-        : null;
+        : "Price on request"
+      : property.price
+        ? `$${property.price.toLocaleString()}`
+        : "Price on request";
 
   const facts = [
     { label: "Property type", value: property.propertyType },
@@ -312,16 +314,14 @@ export function PropertyDetailsDialog({
               <ScrollArea className="h-full">
                 <div className="space-y-6 p-5">
                   <div className="space-y-3">
-                    {priceLabel ? (
-                      <div>
-                        <div className="text-xs uppercase tracking-wide text-emerald-700/70">
-                          Asking price
-                        </div>
-                        <div className="mt-0.5 text-2xl font-semibold text-emerald-950">
-                          {priceLabel}
-                        </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-emerald-700/70">
+                        {property.listingType === "rent" ? "Monthly rent" : "Asking price"}
                       </div>
-                    ) : null}
+                      <div className="mt-0.5 text-2xl font-semibold text-emerald-950">
+                        {priceLabel}
+                      </div>
+                    </div>
 
                     {property.status === "sold" ? (
                       <Button className="w-full h-11 rounded-xl" disabled>

@@ -14,6 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/features/ownerListing/components";
 import { getListing, saveListing } from "@/features/ownerListing/store";
 import { STEP_META, type OwnerListingDraft } from "@/features/ownerListing/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { createProperty, type Property } from "@/services/propertyService";
 import {
   formatLocation,
   formatMoney,
@@ -22,12 +24,31 @@ import {
   toBadgeStatus,
 } from "./helpers";
 
+function toApiPropertyType(value: string): Property["propertyType"] {
+  const map: Record<string, Property["propertyType"]> = {
+    residential: "Residential",
+    commercial: "Commercial",
+    agricultural: "Agricultural",
+    mixed_use: "Mixed Use",
+  };
+  return map[value] || "Residential";
+}
+
+function toAcres(size: number | null, unit: string): number {
+  if (!size) return 0;
+  if (unit === "hectares") return size * 2.471;
+  if (unit === "sqm") return size / 4046.86;
+  return size;
+}
+
 export default function OwnerListingReview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [draft, setDraft] = useState<OwnerListingDraft | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -57,11 +78,46 @@ export default function OwnerListingReview() {
     navigate(`/sell/owner/listing/${draft.id}?step=${step}`);
   };
 
-  const submitForVerification = () => {
+  const submitForVerification = async () => {
     if (!confirmed) {
       setError("Please confirm you have reviewed this listing before submitting.");
       return;
     }
+    if (!currentUser) {
+      setError("You must be signed in to publish this listing.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const email =
+        draft.identity.email?.includes("@") ? draft.identity.email : currentUser.email;
+      await createProperty({
+        userId: currentUser.uid,
+        listingType: "sale",
+        title: listingTitle(draft),
+        description: draft.land.description || listingTitle(draft),
+        country: draft.location.country || "Unknown",
+        city: draft.location.city || draft.location.region || "Unknown",
+        neighborhood: draft.location.neighborhood || undefined,
+        propertyType: toApiPropertyType(draft.land.propertyType),
+        areaAcres: toAcres(draft.land.size, draft.land.unit),
+        tenure: "Freehold",
+        price: draft.pricing.askingPrice ?? undefined,
+        tags: [],
+        images: draft.media.photos
+          .map((p) => p.dataUrl)
+          .filter((url): url is string => Boolean(url)),
+        contactName: draft.identity.fullName || currentUser.email,
+        contactPhone: draft.identity.phone || "n/a",
+        contactEmail: email,
+      });
+    } catch (err: any) {
+      setError(err.message || "Could not publish listing to the marketplace.");
+      setSubmitting(false);
+      return;
+    }
+
     const badges = Array.from(
       new Set([
         ...draft.verificationBadges,
@@ -221,9 +277,10 @@ export default function OwnerListingReview() {
             <Button
               type="button"
               onClick={submitForVerification}
+              disabled={submitting}
               className="w-full rounded-2xl bg-emerald-900 text-white hover:bg-emerald-900/90"
             >
-              Submit Listing for Verification
+              {submitting ? "Publishing listing…" : "Submit Listing for Verification"}
             </Button>
             <Button
               type="button"

@@ -11,12 +11,12 @@ export function homePathFromSession(): string {
   return homePathForRole(stored?.profile?.accountType);
 }
 
-/** True if this role should access buyer marketplace routes. */
-export function canAccessBuy(accountType?: AccountType | null): boolean {
-  return accountType !== "agent";
+/** Marketplace browse is open to guests, investors, and agents. */
+export function canAccessBuy(_accountType?: AccountType | null): boolean {
+  return true;
 }
 
-/** True if this role should access seller/agent routes. */
+/** Any signed-in account can list land. */
 export function canAccessSell(accountType?: AccountType | null): boolean {
-  return accountType === "agent";
+  return Boolean(accountType);
 }

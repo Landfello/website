@@ -1,15 +1,17 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, ShieldCheck, MapPin, ArrowRight, SlidersHorizontal, CheckCircle2, X, ArrowUpRight } from "lucide-react";
+import { Search, ShieldCheck, MapPin, ArrowRight, SlidersHorizontal, CheckCircle2, X } from "lucide-react";
 import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import residentialImage from "@/assets/images/image.jpeg";
 import { BrandLogo } from "@/components/BrandLogo";
 import { homePathForRole } from "@/lib/roles";
+import { ListingTile, propertyToListing } from "@/components/ListingTile";
+import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
+import { getAllProperties, type Property } from "@/services/propertyService";
 
 // Landfello — UI Preview (single-file)
 
@@ -20,46 +22,6 @@ const countries = [
   { code: "ZA", name: "South Africa", from: 550000, popular: true },
   { code: "TZ", name: "Tanzania", from: 380000, popular: false },
   { code: "RW", name: "Rwanda", from: 450000, popular: false },
-];
-
-const listingsSeed = [
-  {
-    id: 1,
-    title: "Residential Plot · 500 sqm",
-    location: "Accra, Ghana",
-    price: 420000,
-    type: "Land",
-    country: "Ghana",
-    tags: ["Verified title", "Road access"],
-    image: residentialImage,
-  },
-  {
-    id: 2,
-    title: "Beachfront Land · 1,200 sqm",
-    location: "Zanzibar, Tanzania",
-    price: 850000,
-    type: "Land",
-    country: "Tanzania",
-    tags: ["Surveyed", "Power nearby"],
-  },
-  {
-    id: 3,
-    title: "2‑Bed Apartment",
-    location: "Lagos, Nigeria",
-    price: 680000,
-    type: "Home",
-    country: "Nigeria",
-    tags: ["Verified docs", "Great rental demand"],
-  },
-  {
-    id: 4,
-    title: "Farm Land · 2 hectares",
-    location: "Nairobi outskirts, Kenya",
-    price: 480000,
-    type: "Land",
-    country: "Kenya",
-    tags: ["Water access", "Clear boundaries"],
-  },
 ];
 
 function formatMoney(n: number) {
@@ -520,6 +482,17 @@ export default function LandfelloUIPreview() {
   const [country, setCountry] = useState<string>("All");
   const [kind, setKind] = useState<string>("All");
   const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [savedIds, setSavedIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("landfello_saved_properties");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Logged-in users skip marketing home — land on their role home
   useEffect(() => {
@@ -538,20 +511,44 @@ export default function LandfelloUIPreview() {
   }, [location, navigate]);
 
   const countriesForFilter = useMemo(() => ["All", ...Array.from(new Set(countries.map((c) => c.name)))], []);
-  const kindsForFilter = ["All", "Land", "Home"]; 
+  const kindsForFilter = ["All", "Residential", "Agricultural", "Commercial", "Mixed Use"];
+
+  useEffect(() => {
+    getAllProperties({ listingType: "sale" })
+      .then(setProperties)
+      .catch(() => setProperties([]));
+  }, []);
+
+  const toggleSave = (id: string) => {
+    setSavedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      localStorage.setItem("landfello_saved_properties", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const shareProperty = async (id: string) => {
+    const url = `${window.location.origin}/buy?property=${encodeURIComponent(id)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy this link:", url);
+    }
+  };
 
   const listings = useMemo(() => {
-    return listingsSeed
+    return properties
+      .map(propertyToListing)
       .filter((l) => (country === "All" ? true : l.country === country))
-      .filter((l) => (kind === "All" ? true : l.type === kind))
+      .filter((l) => (kind === "All" ? true : l.landType === kind))
       .filter((l) => {
         const q = query.trim().toLowerCase();
         if (!q) return true;
-        return (l.title + " " + l.location + " " + l.country)
+        return `${l.title} ${l.city} ${l.country} ${l.neighborhood ?? ""} ${l.landType}`
           .toLowerCase()
           .includes(q);
       });
-  }, [query, country, kind]);
+  }, [properties, query, country, kind]);
 
   if (currentUser) {
     return null;
@@ -639,7 +636,11 @@ export default function LandfelloUIPreview() {
                     className="pl-9 rounded-2xl"
                   />
                 </div>
-                <Button className="rounded-2xl bg-amber-400 text-emerald-950 hover:bg-amber-300 px-5 py-2.5 font-semibold">
+                <Button
+                  type="button"
+                  onClick={() => navigate("/buy")}
+                  className="rounded-2xl bg-amber-400 text-emerald-950 hover:bg-amber-300 px-5 py-2.5 font-semibold"
+                >
                   Browse listings <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </div>
@@ -705,52 +706,29 @@ export default function LandfelloUIPreview() {
             </div>
           </div>
 
-          <div className="mt-5 grid md:grid-cols-2 gap-4">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {listings.map((l) => (
-              <Card key={l.id} className="rounded-[24px] border-emerald-900/10 overflow-hidden">
-                {l.image ? (
-                  <div className="h-56 overflow-hidden">
-                    <img src={l.image} alt={l.title} className="w-full h-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="h-56 bg-gradient-to-br from-emerald-100 to-emerald-50" />
-                )}
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-emerald-950">{l.title}</div>
-                      <div className="mt-1 text-xs text-emerald-950/60 flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" /> {l.location}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-emerald-950/60">Starting at</div>
-                      <div className="text-lg font-semibold text-emerald-950">{formatMoney(l.price)}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge className="rounded-full bg-emerald-900/5 text-emerald-950 hover:bg-emerald-900/5 ring-1 ring-emerald-900/10">{l.country}</Badge>
-                    <Badge className="rounded-full bg-emerald-900/5 text-emerald-950 hover:bg-emerald-900/5 ring-1 ring-emerald-900/10">{l.type}</Badge>
-                    {l.tags.map((t) => (
-                      <Badge key={t} className="rounded-full bg-amber-400/20 text-emerald-950 ring-1 ring-amber-400/30">{t}</Badge>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <Button className="rounded-2xl bg-emerald-900 text-white hover:bg-emerald-900/90">View details</Button>
-                    <Button
-                      type="button"
-                      className="rounded-md bg-emerald-900 text-white hover:bg-emerald-900/90"
-                    >
-                      Contact agent
-                      <ArrowUpRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <ListingTile
+                key={l.id}
+                l={l}
+                saved={savedIds.includes(l.id)}
+                onToggleSave={toggleSave}
+                onShare={shareProperty}
+                onClick={() => {
+                  const fullProperty = properties.find((p) => p.propertyID === l.id);
+                  if (fullProperty) {
+                    setSelectedProperty(fullProperty);
+                    setDialogOpen(true);
+                  }
+                }}
+              />
             ))}
           </div>
+          {listings.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-emerald-900/10 bg-white p-8 text-center text-sm text-emerald-950/60">
+              No listings match those filters yet.
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -917,6 +895,13 @@ export default function LandfelloUIPreview() {
 
       {/* Sign In Modal */}
       <SignInModal isOpen={isSignInOpen} onClose={() => setIsSignInOpen(false)} navigate={navigate} />
+      <PropertyDetailsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        property={selectedProperty}
+        onSave={(propertyId) => toggleSave(propertyId)}
+        saved={selectedProperty ? savedIds.includes(selectedProperty.propertyID || "") : false}
+      />
     </div>
   );
 }
