@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { TopNav } from "@/components/Profile/TopNav";
 import { ListingTile, propertyToListing } from "@/components/ListingTile";
-import { getAllProperties, Property } from "@/services/propertyService";
+import { getAllProperties, getPropertyById, Property } from "@/services/propertyService";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useRoleGate } from "@/hooks/useRoleGate";
 import { useAuth } from "@/contexts/AuthContext";
@@ -109,7 +109,8 @@ export default function LandfelloBuyPage() {
 
   const shareProperty = async (id: string) => {
     if (!id) return;
-    await sharePropertyLink(id);
+    const listing = properties.find((p) => p.propertyID === id);
+    await sharePropertyLink(id, listing?.title);
   };
 
   const openProperty = (property: Property) => {
@@ -138,14 +139,29 @@ export default function LandfelloBuyPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (loading || properties.length === 0) return;
-    const propertyId = searchParams.get("property");
-    if (!propertyId) return;
-    const match = properties.find((p) => p.propertyID === propertyId);
-    if (match) {
+    let cancelled = false;
+
+    async function openFromQuery() {
+      const propertyId = searchParams.get("property");
+      if (!propertyId || loading) return;
+
+      let match = properties.find((p) => p.propertyID === propertyId) || null;
+      if (!match) {
+        try {
+          match = await getPropertyById(propertyId);
+        } catch {
+          match = null;
+        }
+      }
+      if (cancelled || !match) return;
       setSelectedProperty(match);
       setDialogOpen(true);
     }
+
+    openFromQuery();
+    return () => {
+      cancelled = true;
+    };
   }, [loading, properties, searchParams]);
 
   useEffect(() => {

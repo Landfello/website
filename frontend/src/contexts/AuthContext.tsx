@@ -24,7 +24,6 @@ interface AuthContextType {
   ) => Promise<UserProfile>;
   login: (email: string, password: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfilePicture: (imageFile: File) => Promise<string>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -113,10 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearSession();
     setCurrentUser(null);
     setUserProfile(null);
-  }
-
-  async function signInWithGoogle() {
-    throw new Error("Google sign-in is not configured in this demo. Use email/password.");
   }
 
   async function resetPassword(_email: string) {
@@ -221,7 +216,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signup,
     login,
     logout,
-    signInWithGoogle,
     resetPassword,
     updateProfilePicture,
     updateProfile,

@@ -1,12 +1,17 @@
-/** Build a stable shareable URL for a property listing. */
+/** Build a stable shareable URL that opens that listing on the buy page. */
 export function propertyShareUrl(propertyId: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}/buy?property=${encodeURIComponent(propertyId)}`;
+  const origin =
+    (typeof window !== "undefined" && window.location?.origin) ||
+    import.meta.env.VITE_PUBLIC_SITE_URL ||
+    "";
+  const base = String(origin).replace(/\/$/, "");
+  return `${base}/buy?property=${encodeURIComponent(propertyId)}`;
 }
 
 /**
- * Share a property link via the Web Share API when available,
- * otherwise copy to clipboard. Returns how it was shared.
+ * Share a direct link to a property.
+ * Always prefers putting `/buy?property=<id>` on the clipboard so recipients
+ * land on that exact listing. Uses the native share sheet on mobile when available.
  */
 export async function sharePropertyLink(
   propertyId: string,
@@ -15,7 +20,29 @@ export async function sharePropertyLink(
   if (!propertyId) throw new Error("Missing property id");
   const url = propertyShareUrl(propertyId);
 
-  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+  // 1) Copy first so we always have a working deep link even if share is cancelled
+  let copied = false;
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    }
+  } catch {
+    // continue to other fallbacks
+  }
+
+  // 2) Native share sheet (mobile) — still pass the same deep link
+  const canNativeShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    (!navigator.canShare ||
+      navigator.canShare({
+        title: title || "Landfello listing",
+        text: title ? `Check out ${title} on Landfello` : "Check out this Landfello listing",
+        url,
+      }));
+
+  if (canNativeShare) {
     try {
       await navigator.share({
         title: title || "Landfello listing",
@@ -24,20 +51,14 @@ export async function sharePropertyLink(
       });
       return "shared";
     } catch (err: any) {
-      // User cancelled share sheet — not a failure
-      if (err?.name === "AbortError") return "shared";
+      if (err?.name === "AbortError") {
+        return copied ? "copied" : "prompted";
+      }
     }
   }
 
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-      return "copied";
-    }
-  } catch {
-    // fall through to prompt
-  }
+  if (copied) return "copied";
 
-  window.prompt("Copy this link to share:", url);
+  window.prompt("Copy this link to open the listing:", url);
   return "prompted";
 }
