@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, LayoutDashboard, LogOut, Plus, Settings } from "lucide-react";
+import { Heart, LayoutDashboard, LogOut, Plus, Settings, Store } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
 import { homePathForRole } from "@/lib/roles";
@@ -27,7 +27,6 @@ export function TopNav({ userName }: { userName?: string }) {
   const userEmail = currentUser?.email || "";
 
   const isAgent = userProfile?.accountType === "agent";
-  const isMyPropertiesPage = location.pathname === "/my-properties";
   const dashboardPath = homePathForRole(userProfile?.accountType);
 
   const initials =
@@ -52,52 +51,40 @@ export function TopNav({ userName }: { userName?: string }) {
       <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between">
         <BrandLogo size="sm" />
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-emerald-900/80 ml-8">
-          {[
-            { label: "Buy", path: "/buy" },
-            { label: "Resources", path: "/faq" },
-            { label: "About", path: "/about" },
-          ].map((item) => (
-            <button
-              key={item.path}
-              type="button"
-              onClick={() => {
-                window.scrollTo(0, 0);
-                navigate(item.path);
-              }}
-              className={`relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-emerald-700 after:transition-all ${
-                location.pathname === item.path ||
-                (item.path === "/buy" && location.pathname === "/buy-land")
-                  ? "text-emerald-800 after:w-full"
-                  : "after:w-0 hover:after:w-full"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
         <div className="flex items-center gap-4 ml-auto">
           {currentUser ? (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(dashboardPath)}
-                className="hidden sm:inline-flex rounded-lg border-emerald-900/20 text-emerald-900 hover:bg-emerald-50 px-4 py-1.5 text-sm font-medium gap-1.5"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Button>
-
-              {isAgent && !isMyPropertiesPage && (
+              {isAgent ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate(dashboardPath)}
+                    className={`hidden sm:inline-flex rounded-lg border-emerald-900/20 text-emerald-900 hover:bg-emerald-50 px-4 py-1.5 text-sm font-medium gap-1.5 ${
+                      location.pathname === "/my-properties" ? "bg-emerald-50" : ""
+                    }`}
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => navigate("/add-property")}
+                    className="hidden sm:inline-flex rounded-lg bg-emerald-900 text-white hover:bg-emerald-900/90 px-4 py-1.5 text-sm font-medium gap-1.5"
+                  >
+                    <Plus className="h-4 w-4" />
+                    List a Property
+                  </Button>
+                </>
+              ) : (
                 <Button
                   type="button"
-                  onClick={() => navigate("/add-property")}
-                  className="hidden sm:inline-flex rounded-lg bg-emerald-900 text-white hover:bg-emerald-900/90 px-4 py-1.5 text-sm font-medium gap-1.5"
+                  variant="outline"
+                  onClick={() => navigate("/create-account")}
+                  className="hidden sm:inline-flex rounded-lg border-emerald-900/20 text-emerald-900 hover:bg-emerald-50 px-4 py-1.5 text-sm font-medium gap-1.5"
                 >
-                  <Plus className="h-4 w-4" />
-                  List a Property
+                  <Store className="h-4 w-4" />
+                  Sell
                 </Button>
               )}
 
@@ -127,21 +114,22 @@ export function TopNav({ userName }: { userName?: string }) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/buy")}>
-                    Browse land
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/buy?saved=1")}>
-                    <Heart className="h-4 w-4 mr-2" />
-                    Saved
-                  </DropdownMenuItem>
-                  {isAgent && (
-                    <DropdownMenuItem onClick={() => navigate("/my-properties")}>
-                      My listings
+                  {isAgent ? (
+                    <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Dashboard
                     </DropdownMenuItem>
+                  ) : (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/create-account")}>
+                        <Store className="h-4 w-4 mr-2" />
+                        Sell
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/buy?saved=1")}>
+                        <Heart className="h-4 w-4 mr-2" />
+                        Saved
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuItem onClick={() => navigate("/settings")}>
                     <Settings className="h-4 w-4 mr-2" />
@@ -170,7 +158,7 @@ export function TopNav({ userName }: { userName?: string }) {
                 className="rounded-full bg-amber-400 text-emerald-950 hover:bg-amber-300 px-5 py-2 text-sm font-semibold"
                 onClick={() => navigate("/create-account")}
               >
-                Get started
+                Sell
               </Button>
             </>
           )}

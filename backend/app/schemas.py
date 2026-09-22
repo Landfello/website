@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr, Field
 AccountType = Literal["investor", "agent"]
 ListingType = Literal["sale", "rent"]
 PropertyType = Literal["Residential", "Commercial", "Agricultural", "Mixed Use"]
+PropertyCategory = Literal["Land", "House"]
 Tenure = Literal["Freehold", "Leasehold"]
 LeaseTerm = Literal["Short-term", "Long-term", "Flexible"]
 
@@ -57,6 +58,9 @@ class PropertyIn(BaseModel):
     city: str
     neighborhood: Optional[str] = None
     propertyType: PropertyType = "Residential"
+    category: PropertyCategory = "Land"
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
     areaAcres: float
     tenure: Optional[Tenure] = "Freehold"
     leaseTerm: Optional[LeaseTerm] = None
@@ -81,6 +85,9 @@ class PropertyOut(BaseModel):
     city: str
     neighborhood: Optional[str] = None
     propertyType: str
+    category: str = "Land"
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
     areaAcres: float
     tenure: Optional[str] = None
     leaseTerm: Optional[str] = None
@@ -98,6 +105,10 @@ class PropertyOut(BaseModel):
     status: str = "available"
     agentName: Optional[str] = None
     agentCompany: Optional[str] = None
+
+
+class PhotoUpdateRequest(BaseModel):
+    photoURL: str = Field(min_length=1)
 
 
 class PaymentInitRequest(BaseModel):
@@ -154,6 +165,9 @@ def property_to_out(prop: Any, agent: Any = None) -> PropertyOut:
         city=prop.city,
         neighborhood=prop.neighborhood,
         propertyType=prop.property_type,
+        category=getattr(prop, "category", None) or "Land",
+        bedrooms=getattr(prop, "bedrooms", None),
+        bathrooms=getattr(prop, "bathrooms", None),
         areaAcres=prop.area_acres,
         tenure=prop.tenure,
         leaseTerm=prop.lease_term,

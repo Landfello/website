@@ -17,9 +17,11 @@ import { ListingTile, propertyToListing } from "@/components/ListingTile";
 import { getAllProperties, Property } from "@/services/propertyService";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useRoleGate } from "@/hooks/useRoleGate";
+import { useAuth } from "@/contexts/AuthContext";
 import { getSavedPropertyIds, toggleSavedPropertyId } from "@/lib/savedProperties";
+import { sharePropertyLink } from "@/lib/share";
 
-const HOME_TYPES = [
+const PURPOSES = [
   { key: "Residential", label: "Residential" },
   { key: "Agricultural", label: "Agricultural" },
   { key: "Commercial", label: "Commercial" },
@@ -72,11 +74,13 @@ export default function LandfelloBuyPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const { currentUser } = useAuth();
   const [query, setQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
-  const [listingKind, setListingKind] = useState<"sale" | "rent" | "any">("sale");
-  const [propertyType, setPropertyType] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "Land" | "House">("all");
+  const [propertyPurpose, setPropertyPurpose] = useState("all");
   const [beds, setBeds] = useState("any");
+  const [baths, setBaths] = useState("any");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [onlyVerified, setOnlyVerified] = useState(false);
@@ -96,17 +100,16 @@ export default function LandfelloBuyPage() {
 
   const toggleSave = (id: string) => {
     if (!id) return;
+    if (!currentUser) {
+      navigate("/create-account");
+      return;
+    }
     setSavedIds(toggleSavedPropertyId(id));
   };
 
   const shareProperty = async (id: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("property", id);
-    try {
-      await navigator.clipboard.writeText(url.toString());
-    } catch {
-      window.prompt("Copy this link:", url.toString());
-    }
+    if (!id) return;
+    await sharePropertyLink(id);
   };
 
   const openProperty = (property: Property) => {
@@ -146,29 +149,31 @@ export default function LandfelloBuyPage() {
   }, [loading, properties, searchParams]);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchProperties() {
       try {
         setLoading(true);
         setError(null);
-        const apiFilters: {
-          listingType?: "sale" | "rent";
-          country?: string;
-        } = {};
-        if (listingKind !== "any") apiFilters.listingType = listingKind;
-        if (countryFilter) apiFilters.country = countryFilter;
-        const fetchedProperties = await getAllProperties(apiFilters);
-        setProperties(fetchedProperties);
+        const fetchedProperties = await getAllProperties(
+          countryFilter ? { country: countryFilter } : undefined
+        );
+        if (!cancelled) setProperties(fetchedProperties);
       } catch (err: any) {
         console.error("Error fetching properties:", err);
-        setError(err.message || "Failed to load properties");
-        setProperties([]);
+        if (!cancelled) {
+          setError(err.message || "Failed to load properties");
+          setProperties([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchProperties();
-  }, [countryFilter, listingKind]);
+    return () => {
+      cancelled = true;
+    };
+  }, [countryFilter]);
 
   const filtered = useMemo(() => {
     const listings = properties.map(propertyToListing);
@@ -178,28 +183,31 @@ export default function LandfelloBuyPage() {
 
     const next = listings.filter((l) => {
       if (countryFilter && l.country !== countryFilter) return false;
-      const hay = `${l.title} ${l.city} ${l.country} ${l.neighborhood ?? ""} ${l.landType} ${l.tenure} ${l.description}`
+      const hay = `${l.title} ${l.city} ${l.country} ${l.neighborhood ?? ""} ${l.landType} ${l.category} ${l.tenure} ${l.description} ${(l.tags || []).join(" ")}`
         .toLowerCase();
       if (q && !hay.includes(q)) return false;
-      if (propertyType !== "all" && l.landType !== propertyType) return false;
+      if (categoryFilter !== "all" && l.category !== categoryFilter) return false;
+      if (propertyPurpose !== "all" && l.landType !== propertyPurpose) return false;
       if (onlyVerified && !l.verified) return false;
       if (freeholdOnly && l.tenure !== "Freehold") return false;
       if (savedOnly && !savedIds.includes(l.id)) return false;
-      const amount = l.listingType === "rent" ? l.monthlyRent : l.priceUSD;
+      if (beds !== "any" && l.category === "House") {
+        const minBeds = parseInt(beds, 10);
+        if (!l.bedrooms || l.bedrooms < minBeds) return false;
+      }
+      if (baths !== "any" && l.category === "House") {
+        const minBaths = parseInt(baths, 10);
+        if (!l.bathrooms || l.bathrooms < minBaths) return false;
+      }
+      const amount = l.priceUSD;
       if (min != null && !Number.isNaN(min) && amount > 0 && amount < min) return false;
       if (max != null && !Number.isNaN(max) && amount > max) return false;
       return true;
     });
 
     next.sort((a, b) => {
-      if (sortBy === "price_asc") {
-        return (a.listingType === "rent" ? a.monthlyRent : a.priceUSD) -
-          (b.listingType === "rent" ? b.monthlyRent : b.priceUSD);
-      }
-      if (sortBy === "price_desc") {
-        return (b.listingType === "rent" ? b.monthlyRent : b.priceUSD) -
-          (a.listingType === "rent" ? a.monthlyRent : a.priceUSD);
-      }
+      if (sortBy === "price_asc") return a.priceUSD - b.priceUSD;
+      if (sortBy === "price_desc") return b.priceUSD - a.priceUSD;
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
 
@@ -208,7 +216,10 @@ export default function LandfelloBuyPage() {
     properties,
     query,
     countryFilter,
-    propertyType,
+    categoryFilter,
+    propertyPurpose,
+    beds,
+    baths,
     onlyVerified,
     freeholdOnly,
     savedOnly,
@@ -225,9 +236,10 @@ export default function LandfelloBuyPage() {
       prev.delete("saved");
       return prev;
     });
-    setListingKind("sale");
-    setPropertyType("all");
+    setCategoryFilter("all");
+    setPropertyPurpose("all");
     setBeds("any");
+    setBaths("any");
     setMinPrice("");
     setMaxPrice("");
     setOnlyVerified(false);
@@ -312,19 +324,19 @@ export default function LandfelloBuyPage() {
 
           <div className="space-y-4">
             <div>
-              <div className="mb-1.5 text-xs font-medium text-emerald-950/70">For Sale / Rent</div>
+              <div className="mb-1.5 text-xs font-medium text-emerald-950/70">Property Type</div>
               <div className="grid grid-cols-3 gap-1 rounded-xl bg-emerald-50 p-1">
                 {([
-                  ["sale", "For Sale"],
-                  ["rent", "For Rent"],
-                  ["any", "Any"],
+                  ["all", "Any"],
+                  ["Land", "Land"],
+                  ["House", "House"],
                 ] as const).map(([key, label]) => (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setListingKind(key)}
+                    onClick={() => setCategoryFilter(key)}
                     className={`h-8 rounded-lg text-[11px] font-semibold ${
-                      listingKind === key
+                      categoryFilter === key
                         ? "bg-emerald-800 text-white shadow-sm"
                         : "text-emerald-900/70 hover:bg-white/70"
                     }`}
@@ -355,22 +367,31 @@ export default function LandfelloBuyPage() {
               ))}
             </FilterSelect>
 
-            <FilterSelect label="Property Type" value={propertyType} onChange={setPropertyType}>
-              <option value="all">All types</option>
-              {HOME_TYPES.map((t) => (
+            <FilterSelect label="User Purpose" value={propertyPurpose} onChange={setPropertyPurpose}>
+              <option value="all">All purposes</option>
+              {PURPOSES.map((t) => (
                 <option key={t.key} value={t.key}>
                   {t.label}
                 </option>
               ))}
             </FilterSelect>
 
-            <FilterSelect label="Beds & Baths" value={beds} onChange={setBeds}>
-              <option value="any">Any</option>
-              <option value="1+">1+</option>
-              <option value="2+">2+</option>
-              <option value="3+">3+</option>
-              <option value="4+">4+</option>
-            </FilterSelect>
+            <div className="grid grid-cols-2 gap-2">
+              <FilterSelect label="Beds" value={beds} onChange={setBeds}>
+                <option value="any">Any</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+              </FilterSelect>
+              <FilterSelect label="Baths" value={baths} onChange={setBaths}>
+                <option value="any">Any</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+              </FilterSelect>
+            </div>
 
             <div>
               <div className="mb-1.5 text-xs font-medium text-emerald-950/70">Price Range</div>
@@ -441,9 +462,9 @@ export default function LandfelloBuyPage() {
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   className="h-9 appearance-none rounded-lg border border-emerald-950/10 bg-white px-3 pr-8 text-xs text-emerald-950"
                 >
-                  <option value="newest">Newest first</option>
-                  <option value="price_asc">Price: low to high</option>
-                  <option value="price_desc">Price: high to low</option>
+                  <option value="newest">Newest</option>
+                  <option value="price_asc">Price (Low–High)</option>
+                  <option value="price_desc">Price (High–Low)</option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-950/40" />
               </div>
@@ -541,10 +562,10 @@ export default function LandfelloBuyPage() {
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-emerald-950">
-                        Own Land. Build Possibilities.
+                        Own a property and want to list it?
                       </div>
                       <p className="text-xs text-emerald-950/65">
-                        Join thousands of buyers and investors finding value through land.
+                        Create an agent account to publish land and house listings.
                       </p>
                     </div>
                   </div>
@@ -553,7 +574,7 @@ export default function LandfelloBuyPage() {
                     onClick={() => navigate("/create-account")}
                     className="rounded-full bg-emerald-800 px-5 text-white hover:bg-emerald-900"
                   >
-                    Get Started
+                    Sell
                     <ArrowRight className="ml-1.5 h-4 w-4" />
                   </Button>
                 </div>
@@ -562,7 +583,11 @@ export default function LandfelloBuyPage() {
           ) : null}
 
           {loading ? (
-            <div className="py-16 text-center text-sm text-emerald-950/70">Loading properties...</div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-72 animate-pulse rounded-[22px] bg-emerald-900/5" />
+              ))}
+            </div>
           ) : null}
         </div>
       </div>

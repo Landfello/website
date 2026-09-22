@@ -7,11 +7,11 @@
     "node": "20.x"
   },
   "scripts": {
-    "install:all": "npm install --prefix frontend && python -m pip install -r backend/requirements.txt",
+    "install:all": "npm install --prefix frontend && python3 -m pip install -r backend/requirements.txt",
     "dev": "concurrently -n api,web -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --app-dir backend",
+    "dev:backend": "python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --app-dir backend",
     "dev:frontend": "npm run dev --prefix frontend",
-    "test:backend": "python -m pytest backend/tests -q",
+    "test:backend": "python3 -m pytest backend/tests -q",
     "build:frontend": "npm run build --prefix frontend"
   },
   "devDependencies": {

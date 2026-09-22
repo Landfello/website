@@ -58,19 +58,19 @@ export default function EditProperty() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [listingType, setListingType] = useState<"sale" | "rent">("sale");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     country: "",
     city: "",
     neighborhood: "",
+    category: "Land" as "Land" | "House",
     propertyType: "Residential",
+    bedrooms: "",
+    bathrooms: "",
     areaAcres: "",
     tenure: "Freehold",
-    leaseTerm: "Long-term",
     price: "",
-    monthlyRent: "",
     tags: [] as string[],
     tagInput: "",
     images: [] as string[],
@@ -113,19 +113,19 @@ export default function EditProperty() {
         return;
       }
       
-      setListingType(property.listingType);
       setFormData({
         title: property.title,
         description: property.description,
         country: property.country,
         city: property.city,
         neighborhood: property.neighborhood || "",
+        category: property.category === "House" ? "House" : "Land",
         propertyType: property.propertyType,
+        bedrooms: property.bedrooms?.toString() || "",
+        bathrooms: property.bathrooms?.toString() || "",
         areaAcres: property.areaAcres.toString(),
         tenure: property.tenure || "Freehold",
-        leaseTerm: property.leaseTerm || "Long-term",
         price: property.price?.toString() || "",
-        monthlyRent: property.monthlyRent?.toString() || "",
         tags: property.tags || [],
         tagInput: "",
         images: property.images || [],
@@ -263,34 +263,36 @@ export default function EditProperty() {
       return;
     }
 
+    if (formData.category === "House") {
+      const beds = parseInt(formData.bedrooms, 10);
+      const baths = parseInt(formData.bathrooms, 10);
+      if (!beds || beds < 1 || !baths || baths < 1) {
+        setError("Please enter bedrooms and bathrooms for house listings");
+        return;
+      }
+    }
+
     try {
       setSaving(true);
 
+      const priceNum = parseFloat(formData.price);
       const updates: Partial<Property> = {
-        listingType,
+        listingType: "sale",
         title: formData.title,
         description: formData.description,
         country: formData.country,
         city: formData.city,
         neighborhood: formData.neighborhood || undefined,
+        category: formData.category,
         propertyType: formData.propertyType as Property["propertyType"],
+        bedrooms:
+          formData.category === "House" ? parseInt(formData.bedrooms, 10) || undefined : null,
+        bathrooms:
+          formData.category === "House" ? parseInt(formData.bathrooms, 10) || undefined : null,
         areaAcres: parseFloat(formData.areaAcres) || 0,
-        tenure: listingType === "sale" ? (formData.tenure as "Freehold" | "Leasehold") : undefined,
-        leaseTerm: listingType === "rent" ? (formData.leaseTerm as "Short-term" | "Long-term" | "Flexible") : undefined,
-        price:
-          listingType === "sale"
-            ? (() => {
-                const n = parseFloat(formData.price);
-                return Number.isFinite(n) ? n : undefined;
-              })()
-            : undefined,
-        monthlyRent:
-          listingType === "rent"
-            ? (() => {
-                const n = parseFloat(formData.monthlyRent);
-                return Number.isFinite(n) ? n : undefined;
-              })()
-            : undefined,
+        tenure: formData.tenure as "Freehold" | "Leasehold",
+        price: Number.isFinite(priceNum) ? priceNum : undefined,
+        monthlyRent: undefined,
         tags: formData.tags,
         images: formData.images,
         contactName: formData.contactName,
@@ -307,9 +309,8 @@ export default function EditProperty() {
     }
   };
 
-  const propertyTypes = ["Residential", "Commercial", "Agricultural", "Mixed Use"];
+  const propertyPurposes = ["Residential", "Commercial", "Agricultural", "Mixed Use"];
   const tenureTypes = ["Freehold", "Leasehold"];
-  const leaseTerms = ["Short-term", "Long-term", "Flexible"];
 
   if (loading) {
     return (
@@ -350,41 +351,6 @@ export default function EditProperty() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Listing Type */}
-          <Card className="rounded-[28px] bg-white/80 ring-1 ring-black/5 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-emerald-950 mb-4">Listing Type</h2>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setListingType("sale")}
-                className={`flex-1 rounded-2xl p-4 text-center transition-colors ring-1 ${
-                  listingType === "sale"
-                    ? "bg-emerald-900/5 ring-emerald-900/20"
-                    : "bg-white ring-black/5 hover:bg-emerald-900/5"
-                }`}
-              >
-                <DollarSign className={`h-6 w-6 mx-auto mb-2 ${listingType === "sale" ? "text-emerald-950" : "text-emerald-950/70"}`} />
-                <div className={`text-sm font-semibold ${listingType === "sale" ? "text-emerald-950" : "text-emerald-950/70"}`}>
-                  For Sale
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setListingType("rent")}
-                className={`flex-1 rounded-2xl p-4 text-center transition-colors ring-1 ${
-                  listingType === "rent"
-                    ? "bg-emerald-900/5 ring-emerald-900/20"
-                    : "bg-white ring-black/5 hover:bg-emerald-900/5"
-                }`}
-              >
-                <Home className={`h-6 w-6 mx-auto mb-2 ${listingType === "rent" ? "text-emerald-950" : "text-emerald-950/70"}`} />
-                <div className={`text-sm font-semibold ${listingType === "rent" ? "text-emerald-950" : "text-emerald-950/70"}`}>
-                  For Rent
-                </div>
-              </button>
-            </div>
-          </Card>
-
           {/* Basic Information */}
           <Card className="rounded-[28px] bg-white/80 ring-1 ring-black/5 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-emerald-950 mb-4">Basic Information</h2>
@@ -461,8 +427,43 @@ export default function EditProperty() {
           {/* Property Details */}
           <Card className="rounded-[28px] bg-white/80 ring-1 ring-black/5 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-emerald-950 mb-4">Property Details</h2>
+            <div className="mb-5">
+              <div className="mb-2 text-sm font-medium text-emerald-950">
+                Property Type <span className="text-red-500">*</span>
+              </div>
+              <p className="mb-3 text-xs text-emerald-950/60">
+                Choose land or house. We only list properties for sale.
+              </p>
+              <div className="flex gap-3">
+                {(["Land", "House"] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, category: cat }))}
+                    className={`flex-1 rounded-2xl p-4 text-center transition-colors ring-1 ${
+                      formData.category === cat
+                        ? "bg-emerald-900/5 ring-emerald-900/20"
+                        : "bg-white ring-black/5 hover:bg-emerald-900/5"
+                    }`}
+                  >
+                    <Home
+                      className={`h-6 w-6 mx-auto mb-2 ${
+                        formData.category === cat ? "text-emerald-950" : "text-emerald-950/70"
+                      }`}
+                    />
+                    <div
+                      className={`text-sm font-semibold ${
+                        formData.category === cat ? "text-emerald-950" : "text-emerald-950/70"
+                      }`}
+                    >
+                      {cat}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="Property Type" icon={<Home className="h-4 w-4" />} required>
+              <Field label="Property User Purpose" icon={<Home className="h-4 w-4" />} required>
                 <select
                   name="propertyType"
                   value={formData.propertyType}
@@ -470,7 +471,7 @@ export default function EditProperty() {
                   className="w-full rounded-2xl border border-emerald-900/15 px-4 py-2.5 pl-9 text-sm text-emerald-950 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-900/20"
                   required
                 >
-                  {propertyTypes.map((type) => (
+                  {propertyPurposes.map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>
@@ -492,72 +493,70 @@ export default function EditProperty() {
                 />
               </Field>
 
-              {listingType === "sale" ? (
-                <Field label="Tenure" icon={<FileText className="h-4 w-4" />} required>
-                  <select
-                    name="tenure"
-                    value={formData.tenure}
-                    onChange={handleChange}
-                    className="w-full rounded-2xl border border-emerald-900/15 px-4 py-2.5 pl-9 text-sm text-emerald-950 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-900/20"
-                    required
-                  >
-                    {tenureTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              ) : (
-                <Field label="Lease Term" icon={<FileText className="h-4 w-4" />} required>
-                  <select
-                    name="leaseTerm"
-                    value={formData.leaseTerm}
-                    onChange={handleChange}
-                    className="w-full rounded-2xl border border-emerald-900/15 px-4 py-2.5 pl-9 text-sm text-emerald-950 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-900/20"
-                    required
-                  >
-                    {leaseTerms.map((term) => (
-                      <option key={term} value={term}>
-                        {term}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
+              <Field label="Tenure" icon={<FileText className="h-4 w-4" />} required>
+                <select
+                  name="tenure"
+                  value={formData.tenure}
+                  onChange={handleChange}
+                  className="w-full rounded-2xl border border-emerald-900/15 px-4 py-2.5 pl-9 text-sm text-emerald-950 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-900/20"
+                  required
+                >
+                  {tenureTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </Field>
             </div>
+
+            {formData.category === "House" ? (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Bedrooms" icon={<Home className="h-4 w-4" />} required>
+                  <Input
+                    type="number"
+                    name="bedrooms"
+                    value={formData.bedrooms}
+                    onChange={handleChange}
+                    placeholder="e.g. 3"
+                    min="1"
+                    step="1"
+                    className="w-full rounded-2xl pl-9"
+                    required
+                  />
+                </Field>
+                <Field label="Bathrooms" icon={<Home className="h-4 w-4" />} required>
+                  <Input
+                    type="number"
+                    name="bathrooms"
+                    value={formData.bathrooms}
+                    onChange={handleChange}
+                    placeholder="e.g. 2"
+                    min="1"
+                    step="1"
+                    className="w-full rounded-2xl pl-9"
+                    required
+                  />
+                </Field>
+              </div>
+            ) : null}
           </Card>
 
           {/* Pricing */}
           <Card className="rounded-[28px] bg-white/80 ring-1 ring-black/5 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-emerald-950 mb-4">Pricing</h2>
-            {listingType === "sale" ? (
-              <Field label="Price (USD)" icon={<DollarSign className="h-4 w-4" />} required>
-                <Input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  placeholder="50000"
-                  min="0"
-                  className="w-full rounded-2xl pl-9"
-                  required
-                />
-              </Field>
-            ) : (
-              <Field label="Monthly Rent (USD)" icon={<DollarSign className="h-4 w-4" />} required>
-                <Input
-                  type="number"
-                  name="monthlyRent"
-                  value={formData.monthlyRent}
-                  onChange={handleChange}
-                  placeholder="500"
-                  min="0"
-                  className="w-full rounded-2xl pl-9"
-                  required
-                />
-              </Field>
-            )}
+            <Field label="Asking price (USD)" icon={<DollarSign className="h-4 w-4" />} required>
+              <Input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                placeholder="50000"
+                min="0"
+                className="w-full rounded-2xl pl-9"
+                required
+              />
+            </Field>
           </Card>
 
           {/* Images Gallery */}
@@ -701,7 +700,10 @@ export default function EditProperty() {
 
           {/* Tags/Features */}
           <Card className="rounded-[28px] bg-white/80 ring-1 ring-black/5 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-emerald-950 mb-4">Tags & Features</h2>
+            <h2 className="text-lg font-semibold text-emerald-950 mb-1">Tags & Features</h2>
+            <p className="text-xs text-emerald-950/60 mb-4">
+              Shown on listing cards and property details so buyers can spot highlights like road access or ocean view.
+            </p>
             <div className="space-y-3">
               <div className="flex gap-2">
                 <Input

@@ -87,23 +87,14 @@ export default function MyProperties() {
       <TopNav />
 
       <div className="mx-auto max-w-[1400px] px-2 sm:px-3 md:px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
+          <div className="mb-8">
             <h1 className="text-3xl font-semibold text-gray-900">
               Dashboard
             </h1>
             <p className="mt-2 text-sm text-gray-600">
-              Manage your property listings — add, edit, or delete
+              Manage your property listings: list, edit, or delete
             </p>
           </div>
-          <Button
-            onClick={() => navigate("/add-property")}
-            className="rounded-lg bg-emerald-900 text-white hover:bg-emerald-900/90 shadow-sm hover:shadow-md transition-all"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Property
-          </Button>
-        </div>
 
         {error && (
           <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 shadow-sm">
@@ -120,14 +111,14 @@ export default function MyProperties() {
           <Card className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm">
             <div className="text-lg font-semibold text-gray-900 mb-2">No properties yet</div>
             <div className="text-sm text-gray-600 mb-6">
-              Start by adding your first property listing
+              Start by listing your first property
             </div>
             <Button
               onClick={() => navigate("/add-property")}
               className="rounded-lg bg-emerald-900 text-white hover:bg-emerald-900/90 shadow-sm hover:shadow-md transition-all"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Your First Property
+              List a Property
             </Button>
           </Card>
         ) : (

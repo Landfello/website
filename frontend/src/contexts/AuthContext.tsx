@@ -123,8 +123,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     throw new Error("Password reset is not available in the local demo yet.");
   }
 
-  async function updateProfilePicture(_imageFile: File): Promise<string> {
-    throw new Error("Profile picture upload is not available in the local demo yet.");
+  async function updateProfilePicture(imageFile: File): Promise<string> {
+    const token = getStoredToken();
+    if (!token) throw new Error("You must be signed in to update your profile picture");
+
+    if (!imageFile.type.startsWith("image/")) {
+      throw new Error("Please choose an image file");
+    }
+    if (imageFile.size > 4 * 1024 * 1024) {
+      throw new Error("Image is too large. Maximum size is 4MB.");
+    }
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Failed to read image file"));
+      reader.readAsDataURL(imageFile);
+    });
+
+    const response = await fetch(`${API_BASE_URL}/auth/photo`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ photoURL: dataUrl }),
+    });
+    const user = await parseJson(response);
+    applyAuth(token, user);
+    return dataUrl;
   }
 
   async function refreshUserProfile() {

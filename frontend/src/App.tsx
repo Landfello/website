@@ -4,7 +4,6 @@ import { ScrollToTop } from './components/ScrollToTop';
 import Home from './pages/Home';
 import SignUp from './pages/SignUp';
 import SavingsProgram from './pages/SavingsProgram';
-import About from './pages/About';
 import BuyLand from './pages/BuyLand';
 import AddProperty from './pages/AddProperty';
 import MyProperties from './pages/MyProperties';
@@ -12,7 +11,7 @@ import EditProperty from './pages/EditProperty';
 import Settings from './pages/Settings';
 import Sell from './pages/Sell';
 import Legal from './pages/Legal';
-import FAQ from './pages/FAQ';
+import Terms from './pages/Terms';
 import Contact from './pages/Contact';
 import OwnerListingEntry from './pages/ownerListing/OwnerListingEntry';
 import OwnerListingFlow from './pages/ownerListing/OwnerListingFlow';
@@ -70,9 +69,10 @@ function App() {
             <Route path="/how-it-works" element={<Navigate to="/about" replace />} />
             <Route path="/partner-program" element={<SavingsProgram />} />
             <Route path="/savings-program" element={<SavingsProgram />} />
-            <Route path="/about" element={<About />} />
+            <Route path="/about" element={<Navigate to="/" replace />} />
             <Route path="/legal" element={<Legal />} />
-            <Route path="/faq" element={<FAQ />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/faq" element={<Navigate to="/" replace />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/buy" element={<BuyLand />} />
             <Route path="/buy-land" element={<BuyLand />} />

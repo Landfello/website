@@ -13,6 +13,7 @@ import { ListingTile, propertyToListing } from "@/components/ListingTile";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { getAllProperties, type Property } from "@/services/propertyService";
 import { getSavedPropertyIds, toggleSavedPropertyId } from "@/lib/savedProperties";
+import { sharePropertyLink } from "@/lib/share";
 
 // Landfello — UI Preview (single-file)
 
@@ -508,23 +509,23 @@ export default function LandfelloUIPreview() {
   const kindsForFilter = ["All", "Residential", "Agricultural", "Commercial", "Mixed Use"];
 
   useEffect(() => {
-    getAllProperties({ listingType: "sale" })
+    getAllProperties()
       .then(setProperties)
       .catch(() => setProperties([]));
   }, []);
 
   const toggleSave = (id: string) => {
     if (!id) return;
+    if (!currentUser) {
+      setIsSignInOpen(true);
+      return;
+    }
     setSavedIds(toggleSavedPropertyId(id));
   };
 
   const shareProperty = async (id: string) => {
-    const url = `${window.location.origin}/buy?property=${encodeURIComponent(id)}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      window.prompt("Copy this link:", url);
-    }
+    if (!id) return;
+    await sharePropertyLink(id);
   };
 
   const listings = useMemo(() => {
@@ -553,27 +554,8 @@ export default function LandfelloUIPreview() {
           {/* Logo */}
           <BrandLogo size="sm" />
 
-          {/* Navigation - positioned closer to logo */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-emerald-900/80 ml-8">
-            <button 
-              onClick={() => navigate('/buy')} 
-              className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
-            >
-              Buy
-            </button>
-            <button 
-              onClick={() => navigate('/faq')} 
-              className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
-            >
-              Resources
-            </button>
-            <button 
-              onClick={() => navigate('/about')} 
-              className="relative hover:text-emerald-700 transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-700 after:transition-all hover:after:w-full"
-            >
-              About
-            </button>
-          </nav>
+          {/* Navigation intentionally minimal — marketplace is reached via browse CTA */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-emerald-900/80 ml-8" />
 
           {/* Actions */}
           <div className="flex items-center gap-4 ml-auto">
@@ -588,7 +570,7 @@ export default function LandfelloUIPreview() {
               className="rounded-full bg-amber-400 text-emerald-950 hover:bg-amber-300 px-5 py-2 text-sm font-semibold"
               onClick={() => navigate('/create-account')}
             >
-              Get started
+              Sell
             </Button>
           </div>
         </div>
@@ -837,12 +819,6 @@ export default function LandfelloUIPreview() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm text-emerald-950/70">
-            <button 
-              onClick={() => navigate('/about')} 
-              className="hover:text-emerald-950 text-sm text-emerald-950/70 bg-transparent border-none cursor-pointer p-0 text-left"
-            >
-              About
-            </button>
             <button
               type="button"
               onClick={() => navigate('/legal')}
@@ -852,10 +828,10 @@ export default function LandfelloUIPreview() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/faq')}
+              onClick={() => navigate('/terms')}
               className="hover:text-emerald-950 text-sm text-emerald-950/70 bg-transparent border-none cursor-pointer p-0 text-left"
             >
-              FAQs
+              Terms of Service
             </button>
             <button
               type="button"

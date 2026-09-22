@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Property } from "@/services/propertyService";
 import { useAuth } from "@/contexts/AuthContext";
 import { CallToBuyDialog } from "@/components/CallToBuyDialog";
+import { sharePropertyLink } from "@/lib/share";
 
 const ScrollArea = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className={`overflow-y-auto ${className || ""}`}>{children}</div>
@@ -66,14 +67,18 @@ export function PropertyDetailsDialog({
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    if (!property.propertyID) return;
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      const result = await sharePropertyLink(property.propertyID, property.title);
+      if (result === "copied" || result === "prompted") {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2000);
+      }
     } catch {
-      // Fallback for older browsers
-      window.prompt("Copy this link:", url);
+      window.prompt(
+        "Copy this link:",
+        `${window.location.origin}/buy?property=${encodeURIComponent(property.propertyID)}`
+      );
     }
   };
 
@@ -85,28 +90,39 @@ export function PropertyDetailsDialog({
         ];
 
   const address = `${property.neighborhood ? `${property.neighborhood}, ` : ""}${property.city}, ${property.country}`;
-  const listingType = property.listingType === "sale" ? "For sale" : "For rent";
-  const priceLabel =
-    property.listingType === "rent"
-      ? property.monthlyRent
-        ? `$${property.monthlyRent.toLocaleString()}/mo`
-        : "Price on request"
-      : property.price
-        ? `$${property.price.toLocaleString()}`
-        : "Price on request";
+  const listingType = "For sale";
+  const priceLabel = property.price
+    ? `$${property.price.toLocaleString()}`
+    : "Price on request";
 
   const facts = [
-    { label: "Property type", value: property.propertyType },
+    { label: "Category", value: property.category === "House" ? "House" : "Land" },
+    { label: "User purpose", value: property.propertyType },
     { label: "Area", value: `${property.areaAcres} Acres` },
+    ...(property.category === "House" && property.bedrooms
+      ? [{ label: "Bedrooms", value: String(property.bedrooms) }]
+      : []),
+    ...(property.category === "House" && property.bathrooms
+      ? [{ label: "Bathrooms", value: String(property.bathrooms) }]
+      : []),
     { label: "Tenure", value: property.tenure || "Freehold" },
     { label: "Country", value: property.country },
     { label: "City", value: property.city },
     ...(property.neighborhood ? [{ label: "Neighborhood", value: property.neighborhood }] : []),
   ];
 
-  if (property.listingType === "rent" && property.leaseTerm) {
-    facts.push({ label: "Lease term", value: property.leaseTerm });
+  if (property.tags?.length) {
+    facts.push({ label: "Features", value: property.tags.join(", ") });
   }
+
+  const handleSaveClick = () => {
+    if (!currentUser) {
+      onOpenChange(false);
+      navigate("/create-account");
+      return;
+    }
+    if (onSave && property.propertyID) onSave(property.propertyID);
+  };
 
   return (
     <>
@@ -133,7 +149,7 @@ export function PropertyDetailsDialog({
               <Button
                 variant="ghost"
                 className="gap-2 rounded-full"
-                onClick={() => onSave && property.propertyID && onSave(property.propertyID)}
+                onClick={handleSaveClick}
               >
                 <Heart className={`h-4 w-4 ${saved ? "fill-red-600 text-red-600" : ""}`} />{" "}
                 {saved ? "Saved" : "Save"}
@@ -276,8 +292,15 @@ export function PropertyDetailsDialog({
                 </div>
 
                 <div className="mt-3 grid grid-cols-3 gap-2">
+                  <BigStat value={property.category === "House" ? "House" : "Land"} label="category" />
+                  <BigStat value={property.propertyType} label="purpose" />
                   <BigStat value={property.areaAcres.toFixed(2)} label="acres" />
-                  <BigStat value={property.propertyType} label="type" />
+                  {property.category === "House" && property.bedrooms ? (
+                    <BigStat value={String(property.bedrooms)} label="beds" />
+                  ) : null}
+                  {property.category === "House" && property.bathrooms ? (
+                    <BigStat value={String(property.bathrooms)} label="baths" />
+                  ) : null}
                   <BigStat value={property.tenure || "Freehold"} label="tenure" />
                 </div>
 
@@ -317,7 +340,7 @@ export function PropertyDetailsDialog({
                   <div className="space-y-3">
                     <div>
                       <div className="text-xs uppercase tracking-wide text-emerald-700/70">
-                        {property.listingType === "rent" ? "Monthly rent" : "Asking price"}
+                        Asking price
                       </div>
                       <div className="mt-0.5 text-2xl font-semibold text-emerald-950">
                         {priceLabel}

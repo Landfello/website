@@ -61,7 +61,10 @@ class Property(Base):
     country = Column(String, nullable=False)
     city = Column(String, nullable=False)
     neighborhood = Column(String, nullable=True)
-    property_type = Column(String, nullable=False, default="Residential")
+    property_type = Column(String, nullable=False, default="Residential")  # user purpose
+    category = Column(String, nullable=False, default="Land")  # Land | House
+    bedrooms = Column(Integer, nullable=True)
+    bathrooms = Column(Integer, nullable=True)
     area_acres = Column(Float, nullable=False, default=0)
     tenure = Column(String, nullable=True, default="Freehold")
     lease_term = Column(String, nullable=True)
@@ -110,5 +113,23 @@ def get_db():
         db.close()
 
 
+def _ensure_sqlite_columns() -> None:
+    """Add new columns on existing SQLite databases (create_all does not alter)."""
+    if not settings.database_url.startswith("sqlite"):
+        return
+    with engine.begin() as conn:
+        rows = conn.exec_driver_sql("PRAGMA table_info(properties)").fetchall()
+        existing = {row[1] for row in rows}
+        alterations = [
+            ("category", "ALTER TABLE properties ADD COLUMN category VARCHAR DEFAULT 'Land'"),
+            ("bedrooms", "ALTER TABLE properties ADD COLUMN bedrooms INTEGER"),
+            ("bathrooms", "ALTER TABLE properties ADD COLUMN bathrooms INTEGER"),
+        ]
+        for name, sql in alterations:
+            if name not in existing:
+                conn.exec_driver_sql(sql)
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    _ensure_sqlite_columns()

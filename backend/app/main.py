@@ -11,6 +11,7 @@ from .database import Property, User, get_db, init_db, utcnow
 from .schemas import (
     AuthResponse,
     LoginRequest,
+    PhotoUpdateRequest,
     PropertyIn,
     PropertyOut,
     SignupRequest,
@@ -98,13 +99,35 @@ def me(user: User = Depends(get_current_user)):
     return user_to_out(user)
 
 
+@app.put("/api/auth/photo", response_model=UserOut)
+def update_photo(
+    payload: PhotoUpdateRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    photo = payload.photoURL.strip()
+    if not photo.startswith("data:image/") and not photo.startswith("http"):
+        raise HTTPException(status_code=400, detail="Invalid image data")
+    # Cap base64 payloads (~4MB decoded)
+    if photo.startswith("data:image/") and len(photo) > 6_000_000:
+        raise HTTPException(status_code=400, detail="Image is too large (max ~4MB)")
+    user.photo_url = photo
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user_to_out(user)
+
+
 @app.get("/api/properties", response_model=list[PropertyOut])
 def list_properties(
     country: Optional[str] = None,
     propertyType: Optional[str] = None,
+    category: Optional[str] = None,
     listingType: Optional[str] = None,
     minPrice: Optional[float] = None,
     maxPrice: Optional[float] = None,
+    minBedrooms: Optional[int] = None,
+    minBathrooms: Optional[int] = None,
     status: Optional[str] = Query(default="available"),
     db: Session = Depends(get_db),
 ):
@@ -115,12 +138,20 @@ def list_properties(
         q = q.filter(Property.country.ilike(country))
     if propertyType:
         q = q.filter(Property.property_type == propertyType)
-    if listingType:
-        q = q.filter(Property.listing_type == listingType)
+    if category:
+        q = q.filter(Property.category == category)
+    # Sale-only marketplace: ignore rent listings
+    if listingType == "rent":
+        return []
+    q = q.filter(Property.listing_type == "sale")
     if minPrice is not None:
         q = q.filter(Property.price >= minPrice)
     if maxPrice is not None:
         q = q.filter(Property.price <= maxPrice)
+    if minBedrooms is not None:
+        q = q.filter(Property.bedrooms >= minBedrooms)
+    if minBathrooms is not None:
+        q = q.filter(Property.bathrooms >= minBathrooms)
 
     props = q.order_by(Property.created_at.desc()).all()
     results = []
@@ -142,18 +173,21 @@ def create_property(
     prop = Property(
         property_id=str(uuid.uuid4()),
         user_id=user.id,
-        listing_type=payload.listingType,
+        listing_type="sale",
         title=payload.title,
         description=payload.description,
         country=payload.country,
         city=payload.city,
         neighborhood=payload.neighborhood,
         property_type=payload.propertyType,
+        category=payload.category or "Land",
+        bedrooms=payload.bedrooms if payload.category == "House" else None,
+        bathrooms=payload.bathrooms if payload.category == "House" else None,
         area_acres=payload.areaAcres,
         tenure=payload.tenure,
         lease_term=payload.leaseTerm,
         price=payload.price,
-        monthly_rent=payload.monthlyRent,
+        monthly_rent=None,
         tags=payload.tags or [],
         images=payload.images or [],
         contact_name=payload.contactName,
@@ -203,18 +237,21 @@ def update_property(
     if prop.user_id != user.id:
         raise HTTPException(status_code=403, detail="You do not have permission to update this property")
 
-    prop.listing_type = payload.listingType
+    prop.listing_type = "sale"
     prop.title = payload.title
     prop.description = payload.description
     prop.country = payload.country
     prop.city = payload.city
     prop.neighborhood = payload.neighborhood
     prop.property_type = payload.propertyType
+    prop.category = payload.category or "Land"
+    prop.bedrooms = payload.bedrooms if payload.category == "House" else None
+    prop.bathrooms = payload.bathrooms if payload.category == "House" else None
     prop.area_acres = payload.areaAcres
     prop.tenure = payload.tenure
     prop.lease_term = payload.leaseTerm
     prop.price = payload.price
-    prop.monthly_rent = payload.monthlyRent
+    prop.monthly_rent = None
     prop.tags = payload.tags or []
     prop.images = payload.images or []
     prop.contact_name = payload.contactName

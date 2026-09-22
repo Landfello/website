@@ -475,11 +475,23 @@ export default function SignUp() {
                     <input type="checkbox" className="mt-1 rounded" required />
                     <label className="text-emerald-950/70">
                       I agree to the{" "}
-                      <a href="#" className="text-emerald-900 hover:text-emerald-950 font-semibold">
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-900 hover:text-emerald-950 font-semibold"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         Terms of Service
                       </a>{" "}
                       and{" "}
-                      <a href="#" className="text-emerald-900 hover:text-emerald-950 font-semibold">
+                      <a
+                        href="/legal"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-900 hover:text-emerald-950 font-semibold"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         Privacy Policy
                       </a>
                     </label>

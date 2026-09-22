@@ -11,7 +11,12 @@ export interface Property {
   country: string;
   city: string;
   neighborhood?: string;
+  /** How the property will be used (Residential, Commercial, etc.) */
   propertyType: "Residential" | "Commercial" | "Agricultural" | "Mixed Use";
+  /** What is being sold: Land or House */
+  category?: "Land" | "House";
+  bedrooms?: number | null;
+  bathrooms?: number | null;
   areaAcres: number;
   tenure?: "Freehold" | "Leasehold";
   leaseTerm?: "Short-term" | "Long-term" | "Flexible";
@@ -124,16 +129,20 @@ export async function deleteProperty(propertyId: string, _userId: string): Promi
 export async function getAllProperties(filters?: {
   country?: string;
   propertyType?: string;
-  listingType?: "sale" | "rent";
+  category?: "Land" | "House";
   minPrice?: number;
   maxPrice?: number;
+  minBedrooms?: number;
+  minBathrooms?: number;
 }): Promise<Property[]> {
   const params = new URLSearchParams();
   if (filters?.country) params.append("country", filters.country);
   if (filters?.propertyType) params.append("propertyType", filters.propertyType);
-  if (filters?.listingType) params.append("listingType", filters.listingType);
+  if (filters?.category) params.append("category", filters.category);
   if (filters?.minPrice) params.append("minPrice", filters.minPrice.toString());
   if (filters?.maxPrice) params.append("maxPrice", filters.maxPrice.toString());
+  if (filters?.minBedrooms) params.append("minBedrooms", filters.minBedrooms.toString());
+  if (filters?.minBathrooms) params.append("minBathrooms", filters.minBathrooms.toString());
 
   const url = params.toString()
     ? `${API_BASE_URL}/properties?${params.toString()}`
