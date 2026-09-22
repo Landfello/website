@@ -70,7 +70,7 @@ export default function About() {
     "Local partner network for on-the-ground support",
     "Secure escrow services for safe transactions",
     "Landfello Partner Program to build toward your investment",
-    "Step-by-step guidance through the purchase process",
+    "Step by step guidance through the purchase process",
   ];
 
   return (

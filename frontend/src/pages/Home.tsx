@@ -578,12 +578,12 @@ export default function LandfelloUIPreview() {
                 <Pill
                   icon={<CheckCircle2 className="h-4 w-4" />}
                   title="Local experts"
-                  desc="On-the-ground partners"
+                  desc="On the ground partners"
                 />
                 <Pill
                   icon={<CheckCircle2 className="h-4 w-4" />}
                   title="Clear process"
-                  desc="Step-by-step guidance"
+                  desc="Step by step guidance"
                 />
               </div>
             </div>
