@@ -8,9 +8,7 @@ import {
   User,
   Eye,
   EyeOff,
-  Building2,
   Briefcase,
-  Key,
   Phone,
   Sparkles,
   CheckCircle2,
@@ -120,8 +118,6 @@ export default function SignUp() {
     phoneNumber: "",
     password: "",
     confirmPassword: "",
-    companyName: "",
-    securityCode: "",
   });
 
   const passwordStrength = useMemo(() => {
@@ -148,11 +144,6 @@ export default function SignUp() {
       return;
     }
 
-    if (accountType === "agent" && !formData.securityCode) {
-      setError("Security code is required for agents");
-      return;
-    }
-
     try {
       setLoading(true);
       setError("");
@@ -163,18 +154,11 @@ export default function SignUp() {
         return;
       }
 
-      const profileData: any = {
+      const profileData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phoneNumber: formData.phoneNumber,
       };
-
-      if (accountType === "agent" && formData.companyName) {
-        profileData.companyName = formData.companyName;
-      }
-      if (accountType === "agent" && formData.securityCode) {
-        profileData.licenseNumber = formData.securityCode.trim();
-      }
 
       await signup(formData.email.trim(), formData.password, accountType, profileData);
       navigate(accountType === "agent" ? "/my-properties" : "/buy");
@@ -356,41 +340,6 @@ export default function SignUp() {
                       required
                     />
                   </Field>
-
-                  {accountType === "agent" && (
-                    <div className="rounded-3xl bg-emerald-900/5 ring-1 ring-emerald-900/10 p-5 space-y-4">
-                      <div className="text-sm font-semibold text-emerald-950">
-                        Agent verification
-                      </div>
-
-                      <Field label="Company name (optional)" icon={<Building2 className="h-4 w-4" />}>
-                        <Input
-                          type="text"
-                          name="companyName"
-                          value={formData.companyName}
-                          onChange={handleChange}
-                          placeholder="ABC Realty"
-                          className="w-full rounded-2xl pl-9 bg-white"
-                        />
-                      </Field>
-
-                      <Field
-                        label="Security Code"
-                        icon={<Key className="h-4 w-4" />}
-                        hint="Required for agent verification."
-                      >
-                        <Input
-                          type="text"
-                          name="securityCode"
-                          value={formData.securityCode}
-                          onChange={handleChange}
-                          placeholder="Enter your security code"
-                          className="w-full rounded-2xl pl-9 bg-white"
-                          required
-                        />
-                      </Field>
-                    </div>
-                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-emerald-950 mb-2">
