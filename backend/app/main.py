@@ -1,8 +1,9 @@
 import uuid
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from .auth import create_access_token, get_current_user, hash_password, verify_password
@@ -48,6 +49,40 @@ def health():
     return {
         "status": "healthy",
     }
+
+
+@app.get("/api/admin/backup-db")
+def download_sqlite_backup(
+    token: Optional[str] = Query(default=None, description="Backup token"),
+    x_backup_token: Optional[str] = Header(default=None, alias="X-Backup-Token"),
+):
+    """
+    Download the live SQLite database file.
+
+    Auth: pass ?token=... or header X-Backup-Token matching DB_BACKUP_TOKEN.
+    Path follows DATABASE_URL (local: backend/landfello.db, Docker: /data/landfello.db).
+    """
+    provided = token or x_backup_token
+    if not provided or provided != settings.db_backup_token:
+        raise HTTPException(status_code=401, detail="Invalid or missing backup token")
+
+    db_path = settings.sqlite_db_path()
+    if db_path is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Backup download only works when DATABASE_URL is SQLite",
+        )
+    if not db_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Database file not found at {db_path}",
+        )
+
+    return FileResponse(
+        path=str(db_path),
+        filename="landfello.db",
+        media_type="application/octet-stream",
+    )
 
 
 @app.get("/api")

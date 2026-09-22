@@ -18,3 +18,5 @@ services:
         value: https://website-zk2l.vercel.app,http://localhost:5173
       - key: DATABASE_URL
         value: sqlite:////data/landfello.db
+      - key: DB_BACKUP_TOKEN
+        generateValue: true
