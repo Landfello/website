@@ -215,7 +215,7 @@ export default function SignUp() {
                 </h2>
                 <p className="mt-3 text-emerald-950/70 max-w-xl">
                   Landfello helps investors browse verified listings and helps agents showcase properties
-                  professionally—end-to-end, in one place.
+                  professionally end to end, in one place.
                 </p>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
@@ -241,7 +241,7 @@ export default function SignUp() {
                 <div className="mt-6 rounded-3xl bg-gradient-to-r from-emerald-950 to-emerald-800 text-white p-6">
                   <div className="text-sm font-semibold">Tip</div>
                   <div className="mt-1 text-sm text-white/85">
-                    You can switch account types later—create an account now and explore.
+                    You can switch account types later create an account now and explore.
                   </div>
                 </div>
               </div>
