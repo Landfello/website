@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -21,6 +20,7 @@ import { Property } from "@/services/propertyService";
 import { useAuth } from "@/contexts/AuthContext";
 import { CallToBuyDialog } from "@/components/CallToBuyDialog";
 import { sharePropertyLink } from "@/lib/share";
+import { cn } from "@/lib/utils";
 
 const ScrollArea = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className={`overflow-y-auto ${className || ""}`}>{children}</div>
@@ -139,16 +139,10 @@ export function PropertyDetailsDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange} modal>
         <DialogContent
-          className="max-w-6xl overflow-hidden rounded-2xl p-0 max-h-[85vh]"
-          onPointerDownOutside={(e) => {
-            if (lightboxOpen) e.preventDefault();
-          }}
-          onInteractOutside={(e) => {
-            if (lightboxOpen) e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            if (lightboxOpen) e.preventDefault();
-          }}
+          className={cn(
+            "max-w-6xl overflow-hidden rounded-2xl p-0 max-h-[85vh]",
+            lightboxOpen && "pointer-events-none"
+          )}
         >
           <DialogTitle className="sr-only">{property.title}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -415,100 +409,121 @@ function PhotoLightbox({
 }) {
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
       if (e.key === "ArrowLeft") {
+        e.preventDefault();
         onIndexChange((index - 1 + images.length) % images.length);
       }
       if (e.key === "ArrowRight") {
+        e.preventDefault();
         onIndexChange((index + 1) % images.length);
       }
     };
 
     window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open, index, images.length, onClose, onIndexChange]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, index, images.length, onIndexChange]);
 
-  if (!open || typeof document === "undefined") return null;
+  const goPrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    onIndexChange((index - 1 + images.length) % images.length);
+  };
+  const goNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    onIndexChange((index + 1) % images.length);
+  };
 
-  const goPrev = () => onIndexChange((index - 1 + images.length) % images.length);
-  const goNext = () => onIndexChange((index + 1) % images.length);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent
+        data-photo-lightbox=""
+        overlayClassName="z-[199] bg-black/90"
+        className="fixed inset-0 left-0 top-0 z-[200] flex h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-black p-0 text-white shadow-none data-[state=open]:zoom-in-100 [&>button]:hidden"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        <DialogTitle className="sr-only">{title} photos</DialogTitle>
+        <DialogDescription className="sr-only">
+          Photo {index + 1} of {images.length}
+        </DialogDescription>
 
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col bg-black/95 text-white">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium sm:text-base">{title}</div>
-          <div className="text-xs text-white/70">
-            {index + 1} / {images.length}
+        <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium sm:text-base">{title}</div>
+            <div className="text-xs text-white/70">
+              {index + 1} / {images.length}
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+            aria-label="Close photos"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
-          aria-label="Close photos"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 sm:px-16">
-        {images.length > 1 ? (
-          <>
-            <button
-              type="button"
-              onClick={goPrev}
-              className="absolute left-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 sm:left-4"
-              aria-label="Previous photo"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-            <button
-              type="button"
-              onClick={goNext}
-              className="absolute right-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 sm:right-4"
-              aria-label="Next photo"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          </>
-        ) : null}
-
-        <img
-          key={images[index]}
-          src={images[index]}
-          alt={`${title} photo ${index + 1}`}
-          className="max-h-full max-w-full object-contain"
-        />
-      </div>
-
-      {images.length > 1 ? (
-        <div className="shrink-0 overflow-x-auto border-t border-white/10 px-4 py-3">
-          <div className="mx-auto flex w-max gap-2">
-            {images.map((img, i) => (
+        <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 sm:px-16">
+          {images.length > 1 ? (
+            <>
               <button
-                key={`${i}-${img.slice(0, 32)}`}
                 type="button"
-                onClick={() => onIndexChange(i)}
-                className={`h-16 w-24 shrink-0 overflow-hidden rounded-md ring-2 transition ${
-                  i === index ? "ring-white" : "ring-transparent opacity-70 hover:opacity-100"
-                }`}
+                onClick={goPrev}
+                className="absolute left-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 sm:left-4"
+                aria-label="Previous photo"
               >
-                <img src={img} alt="" className="h-full w-full object-cover" />
+                <ChevronLeft className="h-6 w-6" />
               </button>
-            ))}
-          </div>
+              <button
+                type="button"
+                onClick={goNext}
+                className="absolute right-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 sm:right-4"
+                aria-label="Next photo"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          ) : null}
+
+          <img
+            key={images[index]}
+            src={images[index]}
+            alt={`${title} photo ${index + 1}`}
+            className="max-h-full max-w-full object-contain"
+            draggable={false}
+          />
         </div>
-      ) : null}
-    </div>,
-    document.body
+
+        {images.length > 1 ? (
+          <div className="shrink-0 overflow-x-auto border-t border-white/10 px-4 py-3">
+            <div className="mx-auto flex w-max gap-2">
+              {images.map((img, i) => (
+                <button
+                  key={`${i}-${img.slice(0, 32)}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onIndexChange(i);
+                  }}
+                  className={`h-16 w-24 shrink-0 overflow-hidden rounded-md ring-2 transition ${
+                    i === index ? "ring-white" : "ring-transparent opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  <img src={img} alt="" className="h-full w-full object-cover" draggable={false} />
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 
