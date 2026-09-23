@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,12 +13,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, LayoutDashboard, LogOut, Plus, Settings, Store } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
+import { SignInModal } from "@/components/SignInModal";
 import { homePathForRole } from "@/lib/roles";
 
 export function TopNav({ userName }: { userName?: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, logout, userProfile } = useAuth();
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.openSignIn) {
+      setIsSignInOpen(true);
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const displayName =
     (currentUser as any)?.displayName ||
@@ -40,7 +50,7 @@ export function TopNav({ userName }: { userName?: string }) {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/");
+      navigate("/buy");
     } catch (error) {
       console.error("Failed to log out:", error);
     }
@@ -149,7 +159,7 @@ export function TopNav({ userName }: { userName?: string }) {
                 type="button"
                 variant="ghost"
                 className="hidden sm:inline-flex text-sm font-medium text-emerald-900 hover:text-emerald-700 px-0"
-                onClick={() => navigate("/")}
+                onClick={() => setIsSignInOpen(true)}
               >
                 Sign in
               </Button>
@@ -164,6 +174,8 @@ export function TopNav({ userName }: { userName?: string }) {
           )}
         </div>
       </div>
+
+      <SignInModal isOpen={isSignInOpen} onClose={() => setIsSignInOpen(false)} />
     </div>
   );
 }

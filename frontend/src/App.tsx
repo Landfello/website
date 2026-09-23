@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ScrollToTop } from './components/ScrollToTop';
-import Home from './pages/Home';
 import SignUp from './pages/SignUp';
 import SavingsProgram from './pages/SavingsProgram';
 import BuyLand from './pages/BuyLand';
@@ -64,18 +63,18 @@ function App() {
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Navigate to="/buy" replace />} />
             <Route path="/create-account" element={<SignUp />} />
-            <Route path="/how-it-works" element={<Navigate to="/about" replace />} />
+            <Route path="/how-it-works" element={<Navigate to="/buy" replace />} />
             <Route path="/partner-program" element={<SavingsProgram />} />
             <Route path="/savings-program" element={<SavingsProgram />} />
-            <Route path="/about" element={<Navigate to="/" replace />} />
+            <Route path="/about" element={<Navigate to="/buy" replace />} />
             <Route path="/legal" element={<Legal />} />
             <Route path="/terms" element={<Terms />} />
-            <Route path="/faq" element={<Navigate to="/" replace />} />
+            <Route path="/faq" element={<Navigate to="/buy" replace />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/buy" element={<BuyLand />} />
-            <Route path="/buy-land" element={<BuyLand />} />
+            <Route path="/buy-land" element={<Navigate to="/buy" replace />} />
             <Route path="/add-property" element={<AddProperty />} />
             <Route path="/my-properties" element={<MyProperties />} />
             <Route path="/edit-property/:propertyId" element={<EditProperty />} />

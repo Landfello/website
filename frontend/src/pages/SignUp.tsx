@@ -188,11 +188,11 @@ export default function SignUp() {
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/buy")}
               className="rounded-2xl px-3 py-2 text-xs"
             >
               <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-              Back to home
+              Back to listings
             </Button>
           </div>
         </div>
@@ -453,7 +453,7 @@ export default function SignUp() {
                     Already have an account?{" "}
                     <button
                       type="button"
-                      onClick={() => navigate('/', { state: { openSignIn: true } })}
+                      onClick={() => navigate("/buy", { state: { openSignIn: true } })}
                       className="text-emerald-900 hover:text-emerald-950 font-semibold"
                     >
                       Sign in

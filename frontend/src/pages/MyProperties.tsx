@@ -26,7 +26,7 @@ export default function MyProperties() {
     if (currentUser) {
       loadProperties();
     } else {
-      navigate("/");
+      navigate("/buy");
     }
   }, [currentUser, userProfile, navigate]);
 

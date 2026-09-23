@@ -14,7 +14,7 @@ type BrandLogoProps = {
 
 /**
  * Nav brand mark — icon and wordmark are vertically centered as one unit.
- * Buyers go to Buy; agents go to Sell; guests go to marketing home.
+ * Guests and buyers go to Buy; agents go to their dashboard.
  */
 export function BrandLogo({
   onClick,
@@ -34,7 +34,7 @@ export function BrandLogo({
 
   const goHome = () => {
     if (!currentUser) {
-      navigate("/");
+      navigate("/buy");
       return;
     }
     navigate(homePathForRole(userProfile?.accountType));
