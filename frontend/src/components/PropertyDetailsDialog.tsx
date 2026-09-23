@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,6 +12,7 @@ import {
   Sparkles,
   Phone,
   Check,
+  X,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -41,13 +43,15 @@ export function PropertyDetailsDialog({
 }: PropertyDetailsDialogProps) {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (open && property) {
-      setActiveImageIndex(0);
+      setLightboxOpen(false);
+      setLightboxIndex(0);
       setShowCallDialog(false);
       setCopied(false);
     }
@@ -89,6 +93,11 @@ export function PropertyDetailsDialog({
           "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1400&q=80",
         ];
 
+  const openLightbox = (index: number) => {
+    setLightboxIndex(Math.max(0, Math.min(index, images.length - 1)));
+    setLightboxOpen(true);
+  };
+
   const address = `${property.neighborhood ? `${property.neighborhood}, ` : ""}${property.city}, ${property.country}`;
   const listingType = "For sale";
   const priceLabel = property.price
@@ -124,10 +133,23 @@ export function PropertyDetailsDialog({
     if (onSave && property.propertyID) onSave(property.propertyID);
   };
 
+  const extraCount = Math.max(0, images.length - 3);
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange} modal>
-        <DialogContent className="max-w-6xl overflow-hidden rounded-2xl p-0 max-h-[85vh]">
+        <DialogContent
+          className="max-w-6xl overflow-hidden rounded-2xl p-0 max-h-[85vh]"
+          onPointerDownOutside={(e) => {
+            if (lightboxOpen) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (lightboxOpen) e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            if (lightboxOpen) e.preventDefault();
+          }}
+        >
           <DialogTitle className="sr-only">{property.title}</DialogTitle>
           <DialogDescription className="sr-only">
             {property.description || `Details for ${property.title} in ${address}`}
@@ -165,7 +187,11 @@ export function PropertyDetailsDialog({
             <div className="lg:col-span-8 bg-white overflow-y-auto max-h-[calc(85vh-60px)]">
               <div className="relative p-4">
                 {images.length === 1 ? (
-                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-emerald-50">
+                  <button
+                    type="button"
+                    className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-emerald-50"
+                    onClick={() => openLightbox(0)}
+                  >
                     <img
                       src={images[0]}
                       alt="Main property view"
@@ -176,36 +202,19 @@ export function PropertyDetailsDialog({
                         {listingType}
                       </Badge>
                     </div>
-                  </div>
-                ) : images.length === 2 ? (
-                  <div className="grid grid-cols-2 gap-2 overflow-hidden rounded-xl" style={{ height: "320px" }}>
-                    {images.map((img, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="relative h-full min-h-0 overflow-hidden"
-                        onClick={() => setActiveImageIndex(idx)}
-                      >
-                        <img
-                          src={img}
-                          alt={`Property view ${idx + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                        {idx === 0 ? (
-                          <div className="absolute left-3 top-3">
-                            <Badge className="rounded-full bg-emerald-900/90 text-emerald-50">
-                              {listingType}
-                            </Badge>
-                          </div>
-                        ) : null}
-                      </button>
-                    ))}
-                  </div>
+                  </button>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 overflow-hidden rounded-xl" style={{ height: "320px" }}>
-                    <div className="relative h-full min-h-0">
+                  <div
+                    className="grid grid-cols-2 gap-2 overflow-hidden rounded-xl"
+                    style={{ height: "320px" }}
+                  >
+                    <button
+                      type="button"
+                      className="relative h-full min-h-0 overflow-hidden"
+                      onClick={() => openLightbox(0)}
+                    >
                       <img
-                        src={images[activeImageIndex] || images[0]}
+                        src={images[0]}
                         alt="Main property view"
                         className="h-full w-full object-cover"
                       />
@@ -215,67 +224,49 @@ export function PropertyDetailsDialog({
                         </Badge>
                       </div>
                       <div className="absolute bottom-2 right-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="rounded-lg bg-white/90 hover:bg-white text-xs h-7 px-2"
-                          onClick={() =>
-                            setActiveImageIndex((prev) => (prev + 1) % images.length)
-                          }
-                        >
+                        <span className="inline-flex items-center rounded-lg bg-white/90 px-2 py-1 text-xs font-medium text-emerald-950 shadow-sm">
                           {images.length} photos
-                        </Button>
+                        </span>
                       </div>
-                    </div>
-                    <div className="grid grid-rows-2 gap-2 h-full min-h-0">
-                      {images.slice(1, 3).map((img, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          className="relative h-full min-h-0 overflow-hidden"
-                          onClick={() => setActiveImageIndex(idx + 1)}
-                        >
-                          <img
-                            src={img}
-                            alt={`Property view ${idx + 2}`}
-                            className="h-full w-full object-cover"
-                          />
-                          {idx === 1 && images.length > 3 ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm font-semibold text-white">
-                              +{images.length - 3} more
-                            </div>
-                          ) : null}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    </button>
 
-                {images.length > 1 && (
-                  <div className="mt-2 flex items-center justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7 rounded-full border-emerald-200"
-                      onClick={() =>
-                        setActiveImageIndex((n) => (n - 1 + images.length) % images.length)
-                      }
-                      aria-label="Previous"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-xs text-emerald-700">
-                      {activeImageIndex + 1} / {images.length}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7 rounded-full border-emerald-200"
-                      onClick={() => setActiveImageIndex((n) => (n + 1) % images.length)}
-                      aria-label="Next"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    <div className="grid grid-rows-2 gap-2 h-full min-h-0">
+                      {images.slice(1, 3).map((img, idx) => {
+                        const imageIndex = idx + 1;
+                        const isLastTile = idx === images.slice(1, 3).length - 1;
+                        const showMoreOverlay = isLastTile && extraCount > 0;
+                        return (
+                          <button
+                            key={imageIndex}
+                            type="button"
+                            className="relative h-full min-h-0 overflow-hidden"
+                            onClick={() =>
+                              openLightbox(showMoreOverlay ? Math.min(3, images.length - 1) : imageIndex)
+                            }
+                          >
+                            <img
+                              src={img}
+                              alt={`Property view ${imageIndex + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                            {showMoreOverlay ? (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-semibold text-white">
+                                +{extraCount} more
+                              </div>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                      {images.length === 2 ? (
+                        <button
+                          type="button"
+                          className="relative flex h-full min-h-0 items-center justify-center overflow-hidden bg-emerald-50 text-sm font-medium text-emerald-800"
+                          onClick={() => openLightbox(0)}
+                        >
+                          View photos
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 )}
               </div>
@@ -389,12 +380,135 @@ export function PropertyDetailsDialog({
         </DialogContent>
       </Dialog>
 
+      <PhotoLightbox
+        open={lightboxOpen}
+        images={images}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+        onClose={() => setLightboxOpen(false)}
+        title={property.title}
+      />
+
       <CallToBuyDialog
         open={showCallDialog}
         onOpenChange={setShowCallDialog}
         propertyTitle={property.title}
       />
     </>
+  );
+}
+
+function PhotoLightbox({
+  open,
+  images,
+  index,
+  onIndexChange,
+  onClose,
+  title,
+}: {
+  open: boolean;
+  images: string[];
+  index: number;
+  onIndexChange: (index: number) => void;
+  onClose: () => void;
+  title: string;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") {
+        onIndexChange((index - 1 + images.length) % images.length);
+      }
+      if (e.key === "ArrowRight") {
+        onIndexChange((index + 1) % images.length);
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, index, images.length, onClose, onIndexChange]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  const goPrev = () => onIndexChange((index - 1 + images.length) % images.length);
+  const goNext = () => onIndexChange((index + 1) % images.length);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex flex-col bg-black/95 text-white">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium sm:text-base">{title}</div>
+          <div className="text-xs text-white/70">
+            {index + 1} / {images.length}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
+          aria-label="Close photos"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 sm:px-16">
+        {images.length > 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={goPrev}
+              className="absolute left-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 sm:left-4"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              className="absolute right-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 sm:right-4"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </>
+        ) : null}
+
+        <img
+          key={images[index]}
+          src={images[index]}
+          alt={`${title} photo ${index + 1}`}
+          className="max-h-full max-w-full object-contain"
+        />
+      </div>
+
+      {images.length > 1 ? (
+        <div className="shrink-0 overflow-x-auto border-t border-white/10 px-4 py-3">
+          <div className="mx-auto flex w-max gap-2">
+            {images.map((img, i) => (
+              <button
+                key={`${i}-${img.slice(0, 32)}`}
+                type="button"
+                onClick={() => onIndexChange(i)}
+                className={`h-16 w-24 shrink-0 overflow-hidden rounded-md ring-2 transition ${
+                  i === index ? "ring-white" : "ring-transparent opacity-70 hover:opacity-100"
+                }`}
+              >
+                <img src={img} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>,
+    document.body
   );
 }
 
