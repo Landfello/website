@@ -57,7 +57,8 @@ export function TopNav({ userName }: { userName?: string }) {
   };
 
   return (
-    <div className="sticky top-0 z-50 border-b border-emerald-900/10 bg-white/70 backdrop-blur">
+    <>
+      <div className="sticky top-0 z-50 border-b border-emerald-900/10 bg-white/70 backdrop-blur">
       <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between">
         <BrandLogo size="sm" />
 
@@ -174,8 +175,9 @@ export function TopNav({ userName }: { userName?: string }) {
           )}
         </div>
       </div>
+      </div>
 
       <SignInModal isOpen={isSignInOpen} onClose={() => setIsSignInOpen(false)} />
-    </div>
+    </>
   );
 }

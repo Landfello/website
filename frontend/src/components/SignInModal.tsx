@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +33,15 @@ export function SignInModal({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleForgotPasswordSubmit = async (method: "email" | "phone", value: string) => {
@@ -63,12 +73,12 @@ export function SignInModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4">
       <div className="absolute inset-0 z-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div
-        className="relative z-10 w-full max-w-md rounded-[28px] bg-white ring-1 ring-black/5 shadow-xl"
+        className="relative z-10 my-auto w-full max-w-md rounded-[28px] bg-white ring-1 ring-black/5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -178,6 +188,7 @@ export function SignInModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
