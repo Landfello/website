@@ -10,11 +10,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, LayoutDashboard, LogOut, Plus, Settings, Store } from "lucide-react";
+import { Heart, LayoutDashboard, LogOut, Plus, Search, Settings, Store } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SignInModal } from "@/components/SignInModal";
-import { homePathForRole } from "@/lib/roles";
+import { dashboardPathForRole } from "@/lib/roles";
 
 export function TopNav({ userName }: { userName?: string }) {
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export function TopNav({ userName }: { userName?: string }) {
   const userEmail = currentUser?.email || "";
 
   const isAgent = userProfile?.accountType === "agent";
-  const dashboardPath = homePathForRole(userProfile?.accountType);
+  const dashboardPath = dashboardPathForRole(userProfile?.accountType);
 
   const initials =
     displayName
@@ -126,10 +126,16 @@ export function TopNav({ userName }: { userName?: string }) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {isAgent ? (
-                    <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/")}>
+                        <Search className="h-4 w-4 mr-2" />
+                        Browse listings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Dashboard
+                      </DropdownMenuItem>
+                    </>
                   ) : (
                     <>
                       <DropdownMenuItem onClick={() => navigate("/create-account")}>

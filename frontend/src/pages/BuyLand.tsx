@@ -74,7 +74,8 @@ export default function LandfelloBuyPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+  const isAgent = userProfile?.accountType === "agent";
   const [query, setQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | "Land" | "House">("all");
@@ -578,19 +579,25 @@ export default function LandfelloBuyPage() {
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-emerald-950">
-                        Own a property and want to list it?
+                        {isAgent
+                          ? "Ready to list another property?"
+                          : "Own a property and want to list it?"}
                       </div>
                       <p className="text-xs text-emerald-950/65">
-                        Create an agent account to publish land and house listings.
+                        {isAgent
+                          ? "Go to your dashboard to manage listings or publish a new one."
+                          : "Create an agent account to publish land and house listings."}
                       </p>
                     </div>
                   </div>
                   <Button
                     type="button"
-                    onClick={() => navigate("/create-account")}
+                    onClick={() =>
+                      navigate(isAgent ? "/my-properties" : "/create-account")
+                    }
                     className="rounded-full bg-emerald-800 px-5 text-white hover:bg-emerald-900"
                   >
-                    Sell
+                    {isAgent ? "Dashboard" : "Sell"}
                     <ArrowRight className="ml-1.5 h-4 w-4" />
                   </Button>
                 </div>

@@ -161,7 +161,7 @@ export default function SignUp() {
       };
 
       await signup(formData.email.trim(), formData.password, accountType, profileData);
-      navigate(accountType === "agent" ? "/my-properties" : "/");
+      navigate("/");
     } catch (err: any) {
       setError(err.message || "Failed to create account. Please try again.");
     } finally {

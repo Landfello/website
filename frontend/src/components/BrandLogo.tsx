@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
-import { homePathForRole } from "@/lib/roles";
 import logoImage from "@/assets/images/LandFelloLogo.png";
 
 type BrandLogoProps = {
@@ -14,7 +12,7 @@ type BrandLogoProps = {
 
 /**
  * Nav brand mark — icon and wordmark are vertically centered as one unit.
- * Guests and buyers go to Buy; agents go to their dashboard.
+ * Always opens the marketplace listings (agents use Dashboard for their own listings).
  */
 export function BrandLogo({
   onClick,
@@ -23,7 +21,6 @@ export function BrandLogo({
   size = "md",
 }: BrandLogoProps) {
   const navigate = useNavigate();
-  const { currentUser, userProfile } = useAuth();
 
   const iconBox = size === "sm" ? "h-8 w-8 rounded-xl" : "h-10 w-10 rounded-2xl";
   const iconImg = size === "sm" ? "h-6 w-6" : "h-7 w-7";
@@ -33,11 +30,7 @@ export function BrandLogo({
       : "text-base font-semibold leading-none text-emerald-950 sm:text-lg";
 
   const goHome = () => {
-    if (!currentUser) {
-      navigate("/");
-      return;
-    }
-    navigate(homePathForRole(userProfile?.accountType));
+    navigate("/");
   };
 
   return (

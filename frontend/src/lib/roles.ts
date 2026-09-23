@@ -1,7 +1,12 @@
 import { AccountType, getStoredUser } from "@/lib/session";
 
-/** Where a signed-in user should land after auth, by role. */
-export function homePathForRole(accountType?: AccountType | null): string {
+/** Marketplace home — same listings browse for guests, buyers, and agents. */
+export function homePathForRole(_accountType?: AccountType | null): string {
+  return "/";
+}
+
+/** Agent listing management; buyers stay on marketplace. */
+export function dashboardPathForRole(accountType?: AccountType | null): string {
   if (accountType === "agent") return "/my-properties";
   return "/";
 }
