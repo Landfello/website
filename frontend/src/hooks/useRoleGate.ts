@@ -24,7 +24,7 @@ export function useRoleGate(mode: "buy" | "sell") {
     }
 
     if (!canAccessSell(userProfile?.accountType)) {
-      navigate("/buy", { replace: true });
+      navigate("/", { replace: true });
     }
   }, [mode, currentUser, userProfile, loading, navigate]);
 }

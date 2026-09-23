@@ -62,7 +62,7 @@ export default function AddProperty() {
       return;
     }
     if (userProfile?.accountType !== "agent") {
-      navigate("/buy", { replace: true });
+      navigate("/", { replace: true });
     }
   }, [currentUser, userProfile, authLoading, navigate]);
   const [formData, setFormData] = useState({

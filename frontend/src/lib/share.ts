@@ -1,16 +1,16 @@
-/** Build a stable shareable URL that opens that listing on the buy page. */
+/** Build a stable shareable URL that opens that listing on the home page. */
 export function propertyShareUrl(propertyId: string): string {
   const origin =
     (typeof window !== "undefined" && window.location?.origin) ||
     import.meta.env.VITE_PUBLIC_SITE_URL ||
     "";
   const base = String(origin).replace(/\/$/, "");
-  return `${base}/buy?property=${encodeURIComponent(propertyId)}`;
+  return `${base}/?property=${encodeURIComponent(propertyId)}`;
 }
 
 /**
  * Share a direct link to a property.
- * Always prefers putting `/buy?property=<id>` on the clipboard so recipients
+ * Always prefers putting `/?property=<id>` on the clipboard so recipients
  * land on that exact listing. Uses the native share sheet on mobile when available.
  */
 export async function sharePropertyLink(

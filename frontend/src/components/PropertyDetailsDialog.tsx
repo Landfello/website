@@ -77,7 +77,7 @@ export function PropertyDetailsDialog({
     } catch {
       window.prompt(
         "Copy this link:",
-        `${window.location.origin}/buy?property=${encodeURIComponent(property.propertyID)}`
+        `${window.location.origin}/?property=${encodeURIComponent(property.propertyID)}`
       );
     }
   };

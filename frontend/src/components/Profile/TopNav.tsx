@@ -50,7 +50,7 @@ export function TopNav({ userName }: { userName?: string }) {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/buy");
+      navigate("/");
     } catch (error) {
       console.error("Failed to log out:", error);
     }
@@ -135,7 +135,7 @@ export function TopNav({ userName }: { userName?: string }) {
                         <Store className="h-4 w-4 mr-2" />
                         Sell
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/buy?saved=1")}>
+                      <DropdownMenuItem onClick={() => navigate("/?saved=1")}>
                         <Heart className="h-4 w-4 mr-2" />
                         Saved
                       </DropdownMenuItem>

@@ -101,7 +101,7 @@ export default function LandfelloBuyPage() {
   const toggleSave = (id: string) => {
     if (!id) return;
     if (!currentUser) {
-      navigate("/buy", { state: { openSignIn: true } });
+      navigate("/", { state: { openSignIn: true } });
       return;
     }
     setSavedIds(toggleSavedPropertyId(id));

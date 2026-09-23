@@ -79,7 +79,7 @@ export default function About() {
       <header className="sticky top-0 z-40 border-b border-emerald-900/10 bg-white/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <BrandLogo showTagline />
-          <Button variant="ghost" onClick={() => navigate("/buy")} className="rounded-2xl px-3 py-1.5 text-xs">
+          <Button variant="ghost" onClick={() => navigate("/")} className="rounded-2xl px-3 py-1.5 text-xs">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to home
           </Button>
         </div>
@@ -217,7 +217,7 @@ export default function About() {
                 </p>
                 <Button
                   className="w-full rounded-2xl bg-emerald-900 text-white hover:bg-emerald-900/90"
-                  onClick={() => navigate('/buy')}
+                  onClick={() => navigate('/')}
                 >
                   Browse listings <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
@@ -239,7 +239,7 @@ export default function About() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 className="rounded-2xl bg-amber-400 text-emerald-950 hover:bg-amber-300 px-5 py-2.5 font-semibold"
-                onClick={() => navigate("/buy")}
+                onClick={() => navigate("/")}
               >
                 Browse listings
               </Button>

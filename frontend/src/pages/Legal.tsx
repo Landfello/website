@@ -11,7 +11,7 @@ export default function Legal() {
       <header className="sticky top-0 z-40 border-b border-emerald-900/10 bg-white/70 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
           <BrandLogo showTagline />
-          <Button variant="ghost" onClick={() => navigate("/buy")} className="rounded-2xl px-3 py-2 text-xs">
+          <Button variant="ghost" onClick={() => navigate("/")} className="rounded-2xl px-3 py-2 text-xs">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
             Back to home
           </Button>

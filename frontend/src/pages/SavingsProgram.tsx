@@ -462,7 +462,7 @@ export default function SavingsProgramPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm text-emerald-950/70">
-            <button onClick={() => navigate("/buy")} className="text-left hover:text-emerald-950">
+            <button onClick={() => navigate("/")} className="text-left hover:text-emerald-950">
               Buy
             </button>
             <button onClick={() => navigate("/about")} className="text-left hover:text-emerald-950">

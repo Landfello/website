@@ -955,7 +955,7 @@ export default function Settings() {
                     try {
                       await deactivateAccount(deactivatePassword);
                       // Navigate to home page after successful deactivation
-                      navigate("/buy");
+                      navigate("/");
                     } catch (err: any) {
                       setDeactivateError(err.message || "Failed to deactivate account");
                       setIsDeactivating(false);

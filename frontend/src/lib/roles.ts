@@ -3,7 +3,7 @@ import { AccountType, getStoredUser } from "@/lib/session";
 /** Where a signed-in user should land after auth, by role. */
 export function homePathForRole(accountType?: AccountType | null): string {
   if (accountType === "agent") return "/my-properties";
-  return "/buy";
+  return "/";
 }
 
 export function homePathFromSession(): string {

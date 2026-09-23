@@ -34,7 +34,7 @@ export function BrandLogo({
 
   const goHome = () => {
     if (!currentUser) {
-      navigate("/buy");
+      navigate("/");
       return;
     }
     navigate(homePathForRole(userProfile?.accountType));
