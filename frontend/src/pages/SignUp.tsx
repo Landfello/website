@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BrandLogo } from "@/components/BrandLogo";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 
 function StrengthBar({ value }: { value: number }) {
   const label = value <= 1 ? "Weak" : value === 2 ? "Fair" : value === 3 ? "Good" : "Strong";
@@ -103,7 +104,7 @@ function AccountTypeCard({
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, signInWithGoogle } = useAuth();
 
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -447,6 +448,20 @@ export default function SignUp() {
                     >
                       {loading ? "Creating account..." : "Create account"}
                     </Button>
+                    <GoogleAuthButton
+                      label="Sign up with Google"
+                      disabled={loading}
+                      onClick={async () => {
+                        setError("");
+                        try {
+                          setLoading(true);
+                          await signInWithGoogle(accountType);
+                        } catch (err: any) {
+                          setError(err.message || "Google sign-up failed");
+                          setLoading(false);
+                        }
+                      }}
+                    />
                   </div>
 
                   <div className="text-center text-sm text-emerald-950/70 pt-2">

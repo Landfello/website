@@ -24,6 +24,7 @@ def seed_demo_data(db: Session) -> None:
             phone_number="+233200000001",
             license_number="GH-RE-2048",
             company_name="Savanna Lands Realty",
+            account_type_chosen=True,
         )
         db.add(agent)
         db.flush()
@@ -38,6 +39,7 @@ def seed_demo_data(db: Session) -> None:
             first_name="Kwame",
             last_name="Owusu",
             phone_number="+233200000002",
+            account_type_chosen=True,
         )
         db.add(buyer)
 

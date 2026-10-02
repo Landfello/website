@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { AccountTypePrompt } from './components/AccountTypePrompt';
 import { ScrollToTop } from './components/ScrollToTop';
 import SignUp from './pages/SignUp';
 import SavingsProgram from './pages/SavingsProgram';
@@ -74,6 +75,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <ScrollToTop />
+          <AccountTypePrompt />
           <Routes>
             <Route path="/" element={<BuyLand />} />
             <Route path="/create-account" element={<SignUp />} />

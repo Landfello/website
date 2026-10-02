@@ -30,12 +30,17 @@ class LoginRequest(BaseModel):
 
 class UserProfile(BaseModel):
     accountType: AccountType
+    accountTypeChosen: bool = False
     firstName: Optional[str] = None
     lastName: Optional[str] = None
     phoneNumber: Optional[str] = None
     licenseNumber: Optional[str] = None
     companyName: Optional[str] = None
     photoURL: Optional[str] = None
+
+
+class AccountTypeRequest(BaseModel):
+    accountType: AccountType
 
 
 class UserOut(BaseModel):
@@ -195,6 +200,7 @@ def user_to_out(user: Any) -> UserOut:
         photoURL=user.photo_url,
         profile=UserProfile(
             accountType=user.account_type,
+            accountTypeChosen=bool(getattr(user, "account_type_chosen", False)),
             firstName=user.first_name,
             lastName=user.last_name,
             phoneNumber=user.phone_number,

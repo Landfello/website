@@ -1,4 +1,4 @@
-import { getStoredToken } from "@/lib/session";
+import { getAccessToken } from "@/lib/session";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
@@ -37,7 +37,7 @@ export interface Property {
 }
 
 async function getAuthToken(): Promise<string | null> {
-  return getStoredToken();
+  return getAccessToken();
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

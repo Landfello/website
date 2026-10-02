@@ -17,6 +17,22 @@ services:
       - key: CORS_ORIGINS
         value: https://website-zk2l.vercel.app,http://localhost:5173
       - key: DATABASE_URL
-        value: sqlite:////data/landfello.db
-      - key: DB_BACKUP_TOKEN
-        generateValue: true
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_PUBLIC_BASE_URL
+        sync: false

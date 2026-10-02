@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPropertyById, updateProperty, Property } from "@/services/propertyService";
+import { uploadImageFiles } from "@/services/uploads";
 import { TopNav } from "@/components/Profile/TopNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -167,39 +168,15 @@ export default function EditProperty() {
     if (!files || files.length === 0) return;
 
     try {
-      // Convert files to base64 data URLs for storage (same as AddProperty)
-      const imagePromises = Array.from(files).map((file) => {
-        return new Promise<string>((resolve, reject) => {
-          // Validate file size (max 5MB)
-          if (file.size > 5 * 1024 * 1024) {
-            reject(new Error(`File ${file.name} is too large. Maximum size is 5MB.`));
-            return;
-          }
-
-          // Validate file type
-          if (!file.type.startsWith('image/')) {
-            reject(new Error(`File ${file.name} is not an image.`));
-            return;
-          }
-
-          const reader = new FileReader();
-          reader.onload = () => {
-            // reader.result is a base64 data URL
-            resolve(reader.result as string);
-          };
-          reader.onerror = () => reject(new Error(`Failed to read file ${file.name}`));
-          reader.readAsDataURL(file);
-        });
-      });
-
-      const base64Images = await Promise.all(imagePromises);
-      
+      const urls = await uploadImageFiles(Array.from(files));
       setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ...base64Images],
+        images: [...prev.images, ...urls],
       }));
     } catch (err: any) {
       setError(err.message || "Failed to process images");
+    } finally {
+      e.target.value = "";
     }
   };
 

@@ -1,3 +1,5 @@
+import { getSupabase } from "@/lib/supabase";
+
 const TOKEN_KEY = "landfello_token";
 const USER_KEY = "landfello_user";
 
@@ -13,6 +15,7 @@ export interface AppUser {
 
 export interface UserProfile {
   accountType: AccountType;
+  accountTypeChosen?: boolean;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -26,6 +29,19 @@ export interface UserProfile {
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+export async function getAccessToken(): Promise<string | null> {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+      return token;
+    }
+  }
+  return getStoredToken();
 }
 
 export function getStoredUser(): { uid: string; email: string; photoURL?: string | null; profile: UserProfile } | null {

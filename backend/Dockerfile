@@ -18,9 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-# Persist SQLite under /data when a disk is mounted (optional on Render)
-RUN mkdir -p /data
-ENV DATABASE_URL=sqlite:////data/landfello.db
+# Persist SQLite only when DATABASE_URL is unset. Production sets Supabase Postgres.
 
 EXPOSE 8000
 

@@ -4,11 +4,14 @@ import {
   AppUser,
   UserProfile,
   clearSession,
+  getAccessToken,
   getStoredToken,
   getStoredUser,
   persistSession,
   toAppUser,
 } from "@/lib/session";
+import { getSupabase } from "@/lib/supabase";
+import { uploadImageFiles } from "@/services/uploads";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
@@ -23,6 +26,7 @@ interface AuthContextType {
     profileData?: Partial<UserProfile>
   ) => Promise<UserProfile>;
   login: (email: string, password: string) => Promise<UserProfile>;
+  signInWithGoogle: (accountType?: AccountType) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateProfilePicture: (imageFile: File) => Promise<string>;
@@ -68,6 +72,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(profile);
   };
 
+  async function loadProfile(token: string): Promise<UserProfile> {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const user = await parseJson(response);
+    applyAuth(token, user);
+    return user.profile as UserProfile;
+  }
+
   async function signup(
     email: string,
     password: string,
@@ -76,6 +89,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ): Promise<UserProfile> {
     if (!accountType || (accountType !== "agent" && accountType !== "investor")) {
       throw new Error(`Invalid account type: ${accountType}`);
+    }
+
+    const supabase = getSupabase();
+    if (supabase) {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            account_type: accountType,
+            account_type_chosen: true,
+            first_name: profileData?.firstName,
+            last_name: profileData?.lastName,
+            phone_number: profileData?.phoneNumber,
+          },
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (!data.session) {
+        throw new Error("Check your email to confirm your account, then sign in.");
+      }
+      return loadProfile(data.session.access_token);
     }
 
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
@@ -98,6 +133,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(email: string, password: string): Promise<UserProfile> {
+    const supabase = getSupabase();
+    if (supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) throw new Error(error.message);
+      if (!data.session) throw new Error("Sign in failed");
+      return loadProfile(data.session.access_token);
+    }
+
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -108,60 +154,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.user.profile as UserProfile;
   }
 
+  async function signInWithGoogle(accountType?: AccountType) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      throw new Error("Google sign-in is not configured yet.");
+    }
+    const redirect = new URL(window.location.origin + "/");
+    if (accountType) redirect.searchParams.set("accountType", accountType);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirect.toString(),
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (error) throw new Error(error.message);
+  }
+
   async function logout() {
+    const supabase = getSupabase();
+    if (supabase) await supabase.auth.signOut();
     clearSession();
     setCurrentUser(null);
     setUserProfile(null);
   }
 
-  async function resetPassword(_email: string) {
-    throw new Error("Password reset is not available in the local demo yet.");
+  async function resetPassword(email: string) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      throw new Error("Password reset is not available until Supabase Auth is configured.");
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin + "/",
+    });
+    if (error) throw new Error(error.message);
   }
 
   async function updateProfilePicture(imageFile: File): Promise<string> {
-    const token = getStoredToken();
+    const token = await getAccessToken();
     if (!token) throw new Error("You must be signed in to update your profile picture");
 
-    if (!imageFile.type.startsWith("image/")) {
-      throw new Error("Please choose an image file");
-    }
-    if (imageFile.size > 4 * 1024 * 1024) {
-      throw new Error("Image is too large. Maximum size is 4MB.");
-    }
-
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error("Failed to read image file"));
-      reader.readAsDataURL(imageFile);
-    });
-
+    const [url] = await uploadImageFiles([imageFile]);
     const response = await fetch(`${API_BASE_URL}/auth/photo`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ photoURL: dataUrl }),
+      body: JSON.stringify({ photoURL: url }),
     });
     const user = await parseJson(response);
     applyAuth(token, user);
-    return dataUrl;
+    return url;
   }
 
   async function refreshUserProfile() {
-    const token = getStoredToken();
+    const token = await getAccessToken();
     if (!token) return;
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const user = await parseJson(response);
-    applyAuth(token, user);
+    await loadProfile(token);
   }
 
   async function updateProfile(updates: Partial<UserProfile>) {
     if (!userProfile) throw new Error("No user logged in");
-    // Local-only profile merge for demo (backend profile update can be added later)
+    if (updates.accountType) {
+      const token = await getAccessToken();
+      if (!token) throw new Error("You must be signed in");
+      const response = await fetch(`${API_BASE_URL}/auth/account-type`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ accountType: updates.accountType }),
+      });
+      const user = await parseJson(response);
+      applyAuth(token, user);
+      return;
+    }
     const next = { ...userProfile, ...updates };
     setUserProfile(next);
     const stored = getStoredUser();
@@ -170,43 +239,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function changePassword() {
-    throw new Error("Change password is not available in the local demo yet.");
+  async function changePassword(_currentPassword: string, newPassword: string) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      throw new Error("Change password is not available until Supabase Auth is configured.");
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
   }
 
-  async function changeEmail() {
-    throw new Error("Change email is not available in the local demo yet.");
+  async function changeEmail(_currentPassword: string, newEmail: string) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      throw new Error("Change email is not available until Supabase Auth is configured.");
+    }
+    const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+    if (error) throw new Error(error.message);
   }
 
   async function deactivateAccount() {
-    throw new Error("Account deactivation is not available in the local demo yet.");
+    throw new Error("Account deactivation is not available yet.");
   }
 
   useEffect(() => {
-    const token = getStoredToken();
-    const stored = getStoredUser();
-    if (token && stored) {
-      setCurrentUser(toAppUser(stored.uid, stored.email, stored.photoURL));
-      setUserProfile(stored.profile);
-      // Refresh from API in background
-      fetch(`${API_BASE_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(async (res) => {
-          if (!res.ok) {
+    let cancelled = false;
+
+    async function boot() {
+      const supabase = getSupabase();
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (token) {
+            try {
+              await loadProfile(token);
+              const params = new URLSearchParams(window.location.search);
+              const picked = params.get("accountType");
+              if (picked === "investor" || picked === "agent") {
+                const response = await fetch(`${API_BASE_URL}/auth/account-type`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ accountType: picked }),
+                });
+                const user = await parseJson(response);
+                applyAuth(token, user);
+                params.delete("accountType");
+                const next = params.toString();
+                window.history.replaceState({}, "", next ? `/?${next}` : "/");
+              }
+            } catch {
+            clearSession();
+            setCurrentUser(null);
+            setUserProfile(null);
+          }
+        }
+        supabase.auth.onAuthStateChange(async (_event, session) => {
+          if (cancelled) return;
+          if (!session) {
             clearSession();
             setCurrentUser(null);
             setUserProfile(null);
             return;
           }
-          const user = await res.json();
-          applyAuth(token, user);
-        })
-        .catch(() => {
-          // Keep local session if API is briefly unavailable
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+          try {
+            await loadProfile(session.access_token);
+          } catch {
+            // Profile row may not exist yet; keep the session token for a retry.
+          }
+        });
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      const token = getStoredToken();
+      const stored = getStoredUser();
+      if (token && stored) {
+        setCurrentUser(toAppUser(stored.uid, stored.email, stored.photoURL));
+        setUserProfile(stored.profile);
+        fetch(`${API_BASE_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(async (res) => {
+            if (!res.ok) {
+              clearSession();
+              setCurrentUser(null);
+              setUserProfile(null);
+              return;
+            }
+            const user = await res.json();
+            applyAuth(token, user);
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (!cancelled) setLoading(false);
+          });
+      } else if (!cancelled) {
+        setLoading(false);
+      }
     }
+
+    boot();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value: AuthContextType = {
@@ -215,6 +350,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signup,
     login,
+    signInWithGoogle,
     logout,
     resetPassword,
     updateProfilePicture,

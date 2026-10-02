@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { homePathForRole } from "@/lib/roles";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 
 export function SignInModal({
   isOpen,
@@ -16,7 +16,7 @@ export function SignInModal({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
-  const { login, resetPassword } = useAuth();
+  const { login, resetPassword, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -169,6 +169,20 @@ export function SignInModal({
                 >
                   {loading ? "Signing in..." : "Sign in"}
                 </Button>
+                <GoogleAuthButton
+                  label="Sign in with Google"
+                  disabled={loading}
+                  onClick={async () => {
+                    setError("");
+                    try {
+                      setLoading(true);
+                      await signInWithGoogle();
+                    } catch (err: any) {
+                      setError(err.message || "Google sign-in failed");
+                      setLoading(false);
+                    }
+                  }}
+                />
               </div>
 
               <div className="text-center text-sm text-emerald-950/70 pt-4">

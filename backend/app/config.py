@@ -17,8 +17,6 @@ class Settings(BaseSettings):
     app_name: str = "Landfello API"
     secret_key: str = "landfello-dev-secret-change-me"
     access_token_expire_minutes: int = 60 * 24 * 7
-    # Token required for GET /api/admin/backup-db (set DB_BACKUP_TOKEN in production)
-    db_backup_token: str = "landfello-backup-dev-token"
     database_url: str = f"sqlite:///{(BASE_DIR / 'landfello.db').as_posix()}"
     frontend_url: str = "https://website-zk2l.vercel.app"
     cors_origins: str = (
@@ -27,10 +25,32 @@ class Settings(BaseSettings):
         "http://localhost:3000,"
         "http://127.0.0.1:5173"
     )
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_service_role_key: str = ""
+    supabase_jwt_secret: str = ""
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket: str = ""
+    r2_public_base_url: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        url = self.database_url.strip()
+        if url.startswith("postgres://"):
+            return "postgresql+psycopg://" + url[len("postgres://") :]
+        if url.startswith("postgresql://") and "+psycopg" not in url.split("://", 1)[0]:
+            return "postgresql+psycopg://" + url[len("postgresql://") :]
+        return url
+
+    @property
+    def uses_supabase_auth(self) -> bool:
+        return bool(self.supabase_url and self.supabase_jwt_secret)
 
     def sqlite_db_path(self) -> Path | None:
         """Resolve the on-disk SQLite file from DATABASE_URL, if applicable."""
