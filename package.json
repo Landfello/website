@@ -4,7 +4,7 @@
   "description": "Land marketplace for buying and selling land in Africa",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "install:all": "npm install --prefix frontend && python3 -m pip install -r backend/requirements.txt",
