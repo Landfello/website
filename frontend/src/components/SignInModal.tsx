@@ -7,6 +7,7 @@ import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
+import { homePathForRole } from "@/lib/roles";
 
 export function SignInModal({
   isOpen,
