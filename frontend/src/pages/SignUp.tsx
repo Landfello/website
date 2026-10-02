@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BrandLogo } from "@/components/BrandLogo";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
+import { dashboardPathForRole } from "@/lib/roles";
 
 function StrengthBar({ value }: { value: number }) {
   const label = value <= 1 ? "Weak" : value === 2 ? "Fair" : value === 3 ? "Good" : "Strong";
@@ -162,7 +163,7 @@ export default function SignUp() {
       };
 
       await signup(formData.email.trim(), formData.password, accountType, profileData);
-      navigate("/");
+      navigate(dashboardPathForRole(accountType));
     } catch (err: any) {
       setError(err.message || "Failed to create account. Please try again.");
     } finally {

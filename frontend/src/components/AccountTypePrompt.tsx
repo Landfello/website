@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { dashboardPathForRole } from "@/lib/roles";
 
 export function AccountTypePrompt() {
+  const navigate = useNavigate();
   const { currentUser, userProfile, updateProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -16,6 +19,7 @@ export function AccountTypePrompt() {
     setSaving(true);
     try {
       await updateProfile({ accountType });
+      navigate(dashboardPathForRole(accountType), { replace: true });
     } catch (err: any) {
       setError(err.message || "Could not save account type");
     } finally {

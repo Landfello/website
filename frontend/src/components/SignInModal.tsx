@@ -7,7 +7,7 @@ import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
-import { homePathForRole } from "@/lib/roles";
+import { dashboardPathForRole } from "@/lib/roles";
 
 export function SignInModal({
   isOpen,
@@ -66,7 +66,7 @@ export function SignInModal({
       setLoading(true);
       const profile = await login(email.trim(), password);
       onClose();
-      navigate(homePathForRole(profile.accountType));
+      navigate(dashboardPathForRole(profile.accountType));
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Please check your credentials.");
     } finally {

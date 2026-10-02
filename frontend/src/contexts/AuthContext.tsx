@@ -11,6 +11,7 @@ import {
   toAppUser,
 } from "@/lib/session";
 import { getSupabase } from "@/lib/supabase";
+import { dashboardPathForRole } from "@/lib/roles";
 import { uploadImageFiles } from "@/services/uploads";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -45,6 +46,16 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+}
+
+/** Google returns to the site with a code, hash tokens, or the chosen account type. */
+function isAuthCallback(search: string, hash: string) {
+  const params = new URLSearchParams(search);
+  return (
+    params.has("code") ||
+    params.has("accountType") ||
+    /access_token|refresh_token|provider_token|error_description/.test(hash)
+  );
 }
 
 async function parseJson(response: Response) {
@@ -265,16 +276,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     async function boot() {
+      const searchAtLoad = window.location.search;
+      const hashAtLoad = window.location.hash;
+      const fromAuthCallback = isAuthCallback(searchAtLoad, hashAtLoad);
       const supabase = getSupabase();
       if (supabase) {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
         if (token) {
-            try {
-              await loadProfile(token);
-              const params = new URLSearchParams(window.location.search);
-              const picked = params.get("accountType");
-              if (picked === "investor" || picked === "agent") {
+          try {
+            let profile = await loadProfile(token);
+            const picked = new URLSearchParams(searchAtLoad).get("accountType");
+            if (picked === "investor" || picked === "agent") {
+              try {
                 const response = await fetch(`${API_BASE_URL}/auth/account-type`, {
                   method: "PUT",
                   headers: {
@@ -285,11 +299,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 });
                 const user = await parseJson(response);
                 applyAuth(token, user);
-                params.delete("accountType");
-                const next = params.toString();
-                window.history.replaceState({}, "", next ? `/?${next}` : "/");
+                profile = user.profile as UserProfile;
+              } catch {
+                profile = { ...profile, accountType: picked, accountTypeChosen: true };
               }
-            } catch {
+            }
+            if (fromAuthCallback && !cancelled) {
+              window.location.replace(dashboardPathForRole(profile.accountType));
+              return;
+            }
+          } catch {
             clearSession();
             setCurrentUser(null);
             setUserProfile(null);
