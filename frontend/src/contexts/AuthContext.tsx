@@ -60,8 +60,21 @@ function isAuthCallback(search: string, hash: string) {
   );
 }
 
-function roleFromValue(value: string | null): AccountType | null {
+function roleFromValue(value: string | null | undefined): AccountType | null {
   return value === "agent" || value === "investor" ? value : null;
+}
+
+/** Role chosen before Google, then the return URL, then the Supabase user. */
+function roleForCallback(
+  search: string,
+  metadata?: Record<string, unknown> | null
+): AccountType | null {
+  const fromMeta = metadata?.account_type;
+  return (
+    roleFromValue(sessionStorage.getItem(PENDING_ROLE_KEY)) ||
+    roleFromValue(new URLSearchParams(search).get("accountType")) ||
+    roleFromValue(typeof fromMeta === "string" ? fromMeta : null)
+  );
 }
 
 function leaveAuthCallback(role: AccountType | null) {
@@ -183,6 +196,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       throw new Error("Google sign-in is not configured yet.");
     }
+    if (accountType) sessionStorage.setItem(PENDING_ROLE_KEY, accountType);
+    else sessionStorage.removeItem(PENDING_ROLE_KEY);
     const redirect = new URL(window.location.origin + "/");
     if (accountType) redirect.searchParams.set("accountType", accountType);
     const { error } = await supabase.auth.signInWithOAuth({
@@ -296,7 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (supabase) {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
-        const picked = roleFromValue(new URLSearchParams(searchAtLoad).get("accountType"));
+        const picked = roleForCallback(searchAtLoad, data.session?.user?.user_metadata);
         if (token && fromAuthCallback && !cancelled) {
           if (picked) sessionStorage.setItem(PENDING_ROLE_KEY, picked);
           let role = picked;
@@ -335,6 +350,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 applyAuth(token, user);
               } catch {
                 await loadProfile(token);
+              }
+              const dest = dashboardPathForRole(pending);
+              if (
+                window.location.pathname !== dest ||
+                window.location.search ||
+                window.location.hash
+              ) {
+                window.location.replace(dest);
+                return;
               }
             } else {
               await loadProfile(token);
