@@ -48,6 +48,8 @@ export function useAuth() {
   return context;
 }
 
+const PENDING_ROLE_KEY = "landfello_pending_role";
+
 /** Google returns to the site with a code, hash tokens, or the chosen account type. */
 function isAuthCallback(search: string, hash: string) {
   const params = new URLSearchParams(search);
@@ -56,6 +58,17 @@ function isAuthCallback(search: string, hash: string) {
     params.has("accountType") ||
     /access_token|refresh_token|provider_token|error_description/.test(hash)
   );
+}
+
+function roleFromValue(value: string | null): AccountType | null {
+  return value === "agent" || value === "investor" ? value : null;
+}
+
+function leaveAuthCallback(role: AccountType | null) {
+  const dest = dashboardPathForRole(role);
+  const here = window.location.pathname;
+  if (here === dest && !window.location.search && !window.location.hash) return;
+  window.location.replace(dest);
 }
 
 async function parseJson(response: Response) {
@@ -283,11 +296,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (supabase) {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
+        const picked = roleFromValue(new URLSearchParams(searchAtLoad).get("accountType"));
+        if (token && fromAuthCallback && !cancelled) {
+          if (picked) sessionStorage.setItem(PENDING_ROLE_KEY, picked);
+          let role = picked;
+          if (!role) {
+            try {
+              role = (await loadProfile(token)).accountType;
+            } catch {
+              role = null;
+            }
+          }
+          const dest = dashboardPathForRole(role);
+          const stillOnCallback =
+            window.location.pathname !== dest ||
+            Boolean(window.location.search) ||
+            Boolean(window.location.hash);
+          if (stillOnCallback) {
+            window.location.replace(dest);
+            return;
+          }
+        }
         if (token) {
+          const pending = roleFromValue(sessionStorage.getItem(PENDING_ROLE_KEY));
           try {
-            let profile = await loadProfile(token);
-            const picked = new URLSearchParams(searchAtLoad).get("accountType");
-            if (picked === "investor" || picked === "agent") {
+            if (pending) {
+              sessionStorage.removeItem(PENDING_ROLE_KEY);
               try {
                 const response = await fetch(`${API_BASE_URL}/auth/account-type`, {
                   method: "PUT",
@@ -295,18 +329,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                   },
-                  body: JSON.stringify({ accountType: picked }),
+                  body: JSON.stringify({ accountType: pending }),
                 });
                 const user = await parseJson(response);
                 applyAuth(token, user);
-                profile = user.profile as UserProfile;
               } catch {
-                profile = { ...profile, accountType: picked, accountTypeChosen: true };
+                await loadProfile(token);
               }
-            }
-            if (fromAuthCallback && !cancelled) {
-              window.location.replace(dashboardPathForRole(profile.accountType));
-              return;
+            } else {
+              await loadProfile(token);
             }
           } catch {
             clearSession();
@@ -320,6 +351,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             clearSession();
             setCurrentUser(null);
             setUserProfile(null);
+            return;
+          }
+          if (fromAuthCallback) {
+            if (picked) sessionStorage.setItem(PENDING_ROLE_KEY, picked);
+            leaveAuthCallback(picked);
             return;
           }
           try {
