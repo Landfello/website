@@ -1,7 +1,9 @@
 import os
 import sys
 
-# Must set env before importing app modules (engine binds at import time)
+# Must set env before importing app modules (engine binds at import time).
+# SQLite is allowed only for tests via ALLOW_SQLITE.
+os.environ["ALLOW_SQLITE"] = "1"
 os.environ["DATABASE_URL"] = "sqlite:///./test_landfello.db"
 os.environ["SECRET_KEY"] = "test-secret"
 os.environ["PAYSTACK_SECRET_KEY"] = ""

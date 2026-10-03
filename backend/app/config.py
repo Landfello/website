@@ -1,3 +1,5 @@
+import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 
@@ -6,6 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _sqlite_allowed() -> bool:
+    """SQLite is only for automated tests — never for local/prod app data."""
+    return os.environ.get("ALLOW_SQLITE") == "1" or "pytest" in sys.modules
 
 
 class Settings(BaseSettings):
@@ -18,7 +25,8 @@ class Settings(BaseSettings):
     app_name: str = "Landfello API"
     secret_key: str = "landfello-dev-secret-change-me"
     access_token_expire_minutes: int = 60 * 24 * 7
-    database_url: str = f"sqlite:///{(BASE_DIR / 'landfello.db').as_posix()}"
+    # Required: Supabase Postgres (session pooler). SQLite is not used for app data.
+    database_url: str = ""
     frontend_url: str = "https://website-zk2l.vercel.app"
     cors_origins: str = (
         "https://website-zk2l.vercel.app,"
@@ -58,6 +66,17 @@ class Settings(BaseSettings):
     @property
     def sqlalchemy_database_url(self) -> str:
         url = self.database_url.strip()
+        if not url:
+            raise RuntimeError(
+                "DATABASE_URL is required. Use your Supabase Postgres URI "
+                "(postgresql+psycopg://...). SQLite is no longer supported."
+            )
+        if url.startswith("sqlite") and not _sqlite_allowed():
+            raise RuntimeError(
+                "SQLite is no longer supported for Landfello. "
+                "Set DATABASE_URL to the Supabase Postgres connection string "
+                "(Render env or Supabase → Project Settings → Database)."
+            )
         if url.startswith("postgres://"):
             return "postgresql+psycopg://" + url[len("postgres://") :]
         if url.startswith("postgresql://") and "+psycopg" not in url.split("://", 1)[0]:
@@ -67,20 +86,6 @@ class Settings(BaseSettings):
     @property
     def uses_supabase_auth(self) -> bool:
         return bool(self.supabase_url and self.supabase_jwt_secret)
-
-    def sqlite_db_path(self) -> Path | None:
-        """Resolve the on-disk SQLite file from DATABASE_URL, if applicable."""
-        url = self.database_url
-        if not url.startswith("sqlite"):
-            return None
-        # sqlite:////absolute/path or sqlite:///relative/path
-        raw = url.split("sqlite:///", 1)[-1]
-        if raw.startswith("/"):
-            return Path(raw)
-        # sqlite:///./file.db style (three slashes + relative)
-        if url.startswith("sqlite:////"):
-            return Path("/" + url.removeprefix("sqlite:////"))
-        return (BASE_DIR / raw).resolve()
 
 
 @lru_cache

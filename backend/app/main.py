@@ -1,3 +1,4 @@
+import os
 import uuid
 from typing import Optional
 
@@ -113,8 +114,11 @@ def _supabase_confirm_email(user_id: str) -> None:
 
 @app.on_event("startup")
 def on_startup() -> None:
+    # Ensure DATABASE_URL is a usable Postgres URI (raises if still on SQLite).
+    _ = settings.sqlalchemy_database_url
     init_db()
-    if not settings.database_url.startswith("sqlite"):
+    # Demo seed is opt-in only — never auto-seed the shared Supabase database.
+    if os.environ.get("SEED_DEMO_DATA") != "1":
         return
     db = next(get_db())
     try:

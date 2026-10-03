@@ -5,7 +5,7 @@ Marketplace for buying and selling land in Africa.
 - **Buyers** browse verified land listings and call Landfello to buy
 - **Agents** register, upload land photos + details, and list parcels for sale
 - **Frontend:** React + Vite
-- **Backend:** Python FastAPI + SQLite
+- **Backend:** Python FastAPI + Supabase Postgres
 
 ## Quick start
 
@@ -110,7 +110,7 @@ docker run --rm -p 8000:8000 -e SECRET_KEY=dev -e FRONTEND_URL=http://localhost:
 
 Then open http://localhost:8000/health
 
-> Note: SQLite on Render’s free plan is ephemeral unless you attach a persistent disk at `/data`.
+> Note: Set `DATABASE_URL` to the Supabase Postgres pooler URI on Render (not SQLite).
 
 ## Core flows
 
