@@ -39,12 +39,21 @@ def upload_bytes(key: str, data: bytes, content_type: str) -> str:
             detail="Image storage is not configured. Set the Cloudflare R2 environment variables.",
         )
     settings = get_settings()
-    _client().put_object(
-        Bucket=settings.r2_bucket,
-        Key=key,
-        Body=data,
-        ContentType=content_type or "application/octet-stream",
-    )
+    try:
+        _client().put_object(
+            Bucket=settings.r2_bucket,
+            Key=key,
+            Body=data,
+            ContentType=content_type or "application/octet-stream",
+        )
+    except Exception as exc:  # noqa: BLE001 - surface storage misconfig clearly
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Could not upload image to storage. "
+                f"Check that R2 bucket '{settings.r2_bucket}' exists and credentials are valid."
+            ),
+        ) from exc
     return f"{settings.r2_public_base_url.rstrip('/')}/{key}"
 
 

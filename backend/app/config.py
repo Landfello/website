@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +35,21 @@ class Settings(BaseSettings):
     r2_secret_access_key: str = ""
     r2_bucket: str = ""
     r2_public_base_url: str = ""
+
+    @field_validator(
+        "supabase_url",
+        "supabase_anon_key",
+        "supabase_service_role_key",
+        "supabase_jwt_secret",
+        "frontend_url",
+        "cors_origins",
+        "secret_key",
+        "database_url",
+        mode="before",
+    )
+    @classmethod
+    def strip_strings(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
 
     @property
     def cors_origin_list(self) -> list[str]:

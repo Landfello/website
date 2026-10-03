@@ -5,10 +5,10 @@ export function homePathForRole(_accountType?: AccountType | null): string {
   return "/";
 }
 
-/** Agent listing management; buyers stay on marketplace. */
+/** Agent listings dashboard; buyer saved-land dashboard. */
 export function dashboardPathForRole(accountType?: AccountType | null): string {
   if (accountType === "agent") return "/my-properties";
-  return "/";
+  return "/dashboard";
 }
 
 export function homePathFromSession(): string {

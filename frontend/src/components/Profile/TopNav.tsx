@@ -88,15 +88,28 @@ export function TopNav({ userName }: { userName?: string }) {
                   </Button>
                 </>
               ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/create-account")}
-                  className="hidden sm:inline-flex rounded-lg border-emerald-900/20 text-emerald-900 hover:bg-emerald-50 px-4 py-1.5 text-sm font-medium gap-1.5"
-                >
-                  <Store className="h-4 w-4" />
-                  Sell
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate(dashboardPath)}
+                    className={`hidden sm:inline-flex rounded-lg border-emerald-900/20 text-emerald-900 hover:bg-emerald-50 px-4 py-1.5 text-sm font-medium gap-1.5 ${
+                      location.pathname === "/dashboard" ? "bg-emerald-50" : ""
+                    }`}
+                  >
+                    <Heart className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate("/create-account")}
+                    className="hidden sm:inline-flex rounded-lg border-emerald-900/20 text-emerald-900 hover:bg-emerald-50 px-4 py-1.5 text-sm font-medium gap-1.5"
+                  >
+                    <Store className="h-4 w-4" />
+                    Sell
+                  </Button>
+                </>
               )}
 
               <DropdownMenu>
@@ -138,13 +151,17 @@ export function TopNav({ userName }: { userName?: string }) {
                     </>
                   ) : (
                     <>
+                      <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                        <Heart className="h-4 w-4 mr-2" />
+                        Saved land
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/create-account")}>
                         <Store className="h-4 w-4 mr-2" />
                         Sell
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/?saved=1")}>
-                        <Heart className="h-4 w-4 mr-2" />
-                        Saved
                       </DropdownMenuItem>
                     </>
                   )}

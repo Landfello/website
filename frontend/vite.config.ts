@@ -8,16 +8,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
   const frontendEnv = loadEnv(mode, __dirname, 'VITE_');
   const backendEnv = loadEnv(mode, path.resolve(__dirname, '../backend'), '');
-  const supabaseUrl =
+  const supabaseUrl = (
     process.env.VITE_SUPABASE_URL ||
     frontendEnv.VITE_SUPABASE_URL ||
     backendEnv.SUPABASE_URL ||
-    '';
-  const supabaseAnonKey =
+    ''
+  ).trim();
+  const supabaseAnonKey = (
     process.env.VITE_SUPABASE_ANON_KEY ||
     frontendEnv.VITE_SUPABASE_ANON_KEY ||
     backendEnv.SUPABASE_ANON_KEY ||
-    '';
+    ''
+  ).trim();
   const usableUrl = supabaseUrl.includes('YOUR_PROJECT') ? '' : supabaseUrl;
 
   return {

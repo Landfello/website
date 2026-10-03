@@ -467,9 +467,21 @@ export default function LandfelloBuyPage() {
         </aside>
 
         <div>
+          {savedOnly ? (
+            <div className="mb-5">
+              <h2 className="text-2xl font-semibold text-emerald-950">Your dashboard</h2>
+              <p className="mt-1 text-sm text-emerald-950/65">
+                Land and properties you have saved for later.
+              </p>
+            </div>
+          ) : null}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm font-medium text-emerald-950">
-              {loading ? "Loading listings…" : `${filtered.length} ${filtered.length === 1 ? "property" : "properties"} found`}
+              {loading
+                ? "Loading listings…"
+                : savedOnly
+                  ? `${filtered.length} saved ${filtered.length === 1 ? "property" : "properties"}`
+                  : `${filtered.length} ${filtered.length === 1 ? "property" : "properties"} found`}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-emerald-950/55">Sort by</span>

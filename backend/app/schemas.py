@@ -53,6 +53,7 @@ class UserOut(BaseModel):
 class AuthResponse(BaseModel):
     token: str
     user: UserOut
+    refreshToken: Optional[str] = None
 
 
 class PropertyIn(BaseModel):

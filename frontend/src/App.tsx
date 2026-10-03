@@ -3,6 +3,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { AccountTypePrompt } from './components/AccountTypePrompt';
 import { ScrollToTop } from './components/ScrollToTop';
 import SignUp from './pages/SignUp';
+import AuthCallback from './pages/AuthCallback';
+import BuyerDashboard from './pages/BuyerDashboard';
 import SavingsProgram from './pages/SavingsProgram';
 import BuyLand from './pages/BuyLand';
 import AddProperty from './pages/AddProperty';
@@ -78,6 +80,8 @@ function App() {
           <AccountTypePrompt />
           <Routes>
             <Route path="/" element={<BuyLand />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/dashboard" element={<BuyerDashboard />} />
             <Route path="/create-account" element={<SignUp />} />
             <Route path="/how-it-works" element={<Navigate to="/" replace />} />
             <Route path="/partner-program" element={<SavingsProgram />} />

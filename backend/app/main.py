@@ -60,6 +60,16 @@ def _supabase_headers() -> dict[str, str]:
     }
 
 
+def _supabase_admin_headers() -> dict[str, str]:
+    if not settings.supabase_service_role_key:
+        raise HTTPException(status_code=500, detail="SUPABASE_SERVICE_ROLE_KEY is required")
+    return {
+        "apikey": settings.supabase_service_role_key,
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+        "Content-Type": "application/json",
+    }
+
+
 def _supabase_error(resp: httpx.Response) -> str:
     try:
         body = resp.json()
@@ -74,6 +84,31 @@ def _supabase_error(resp: httpx.Response) -> str:
             or "Authentication failed"
         )
     return "Authentication failed"
+
+
+def _supabase_password_token(email: str, password: str) -> dict:
+    resp = httpx.post(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/token?grant_type=password",
+        headers=_supabase_headers(),
+        json={"email": email.lower(), "password": password},
+        timeout=20,
+    )
+    if resp.status_code >= 400:
+        raise HTTPException(status_code=401, detail=_supabase_error(resp) or "Invalid email or password")
+    body = resp.json()
+    if not body.get("access_token"):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return body
+
+
+def _supabase_confirm_email(user_id: str) -> None:
+    """Mark an email/password user confirmed so they can sign in without a inbox link."""
+    httpx.put(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/admin/users/{user_id}",
+        headers=_supabase_admin_headers(),
+        json={"email_confirm": True},
+        timeout=20,
+    )
 
 
 @app.on_event("startup")
@@ -101,13 +136,15 @@ def api_root():
 @app.post("/api/auth/signup", response_model=AuthResponse)
 def signup(payload: SignupRequest, db: Session = Depends(get_db)):
     if settings.uses_supabase_auth:
-        resp = httpx.post(
-            f"{settings.supabase_url.rstrip('/')}/auth/v1/signup",
-            headers=_supabase_headers(),
+        # Admin create with email already confirmed — no inbox step for email/password.
+        create_resp = httpx.post(
+            f"{settings.supabase_url.rstrip('/')}/auth/v1/admin/users",
+            headers=_supabase_admin_headers(),
             json={
                 "email": payload.email.lower(),
                 "password": payload.password,
-                "data": {
+                "email_confirm": True,
+                "user_metadata": {
                     "account_type": payload.accountType,
                     "account_type_chosen": True,
                     "first_name": payload.firstName,
@@ -117,17 +154,31 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
             },
             timeout=20,
         )
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=400, detail=_supabase_error(resp))
-        body = resp.json()
-        token = body.get("access_token")
-        auth_user = body.get("user") or {}
-        if not token or not auth_user.get("id"):
-            raise HTTPException(status_code=400, detail="Confirm your email, then sign in.")
+        if create_resp.status_code >= 400:
+            detail = _supabase_error(create_resp)
+            lowered = detail.lower()
+            if "already" in lowered or "registered" in lowered or "exists" in lowered:
+                raise HTTPException(status_code=400, detail="Email already registered")
+            raise HTTPException(status_code=400, detail=detail)
+
+        auth_user = create_resp.json()
+        # admin/users may wrap the user object
+        if isinstance(auth_user.get("user"), dict):
+            auth_user = auth_user["user"]
+        user_id = auth_user.get("id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Could not create account")
+
+        try:
+            body = _supabase_password_token(payload.email, payload.password)
+        except HTTPException:
+            _supabase_confirm_email(str(user_id))
+            body = _supabase_password_token(payload.email, payload.password)
+
         user = ensure_user_from_claims(
             db,
             {
-                "sub": auth_user["id"],
+                "sub": user_id,
                 "email": payload.email.lower(),
                 "user_metadata": auth_user.get("user_metadata") or {},
             },
@@ -143,7 +194,11 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
-        return AuthResponse(token=token, user=user_to_out(user))
+        return AuthResponse(
+            token=body["access_token"],
+            refreshToken=body.get("refresh_token"),
+            user=user_to_out(user),
+        )
 
     existing = db.query(User).filter(User.email == payload.email.lower()).first()
     if existing:
@@ -183,8 +238,29 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             timeout=20,
         )
         if resp.status_code >= 400:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-        body = resp.json()
+            err = _supabase_error(resp).lower()
+            # Auto-confirm older email/password accounts that still need verification.
+            if "confirm" in err or "not confirmed" in err:
+                link_resp = httpx.post(
+                    f"{settings.supabase_url.rstrip('/')}/auth/v1/admin/generate_link",
+                    headers=_supabase_admin_headers(),
+                    json={"type": "magiclink", "email": payload.email.lower()},
+                    timeout=20,
+                )
+                user_id = None
+                if link_resp.status_code < 400:
+                    link_body = link_resp.json()
+                    user_id = (link_body.get("user") or link_body).get("id")
+                if user_id:
+                    _supabase_confirm_email(str(user_id))
+                    body = _supabase_password_token(payload.email, payload.password)
+                else:
+                    raise HTTPException(status_code=401, detail="Invalid email or password")
+            else:
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+        else:
+            body = resp.json()
+
         token = body.get("access_token")
         auth_user = body.get("user") or {}
         if not token or not auth_user.get("id"):
@@ -197,7 +273,11 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
                 "user_metadata": auth_user.get("user_metadata") or {},
             },
         )
-        return AuthResponse(token=token, user=user_to_out(user))
+        return AuthResponse(
+            token=token,
+            refreshToken=body.get("refresh_token"),
+            user=user_to_out(user),
+        )
 
     user = db.query(User).filter(User.email == payload.email.lower()).first()
     if not user or not verify_password(payload.password, user.hashed_password):

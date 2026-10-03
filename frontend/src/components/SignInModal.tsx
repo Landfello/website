@@ -66,7 +66,9 @@ export function SignInModal({
       setLoading(true);
       const profile = await login(email.trim(), password);
       onClose();
-      navigate(dashboardPathForRole(profile.accountType));
+      navigate(
+        profile.accountTypeChosen === false ? "/" : dashboardPathForRole(profile.accountType)
+      );
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Please check your credentials.");
     } finally {
