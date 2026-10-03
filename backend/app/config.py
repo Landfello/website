@@ -21,6 +21,9 @@ def _sqlite_allowed() -> bool:
 
 def _normalize_database_url(url: str) -> str:
     """Driver prefix + drop query options psycopg does not accept."""
+    # People sometimes paste "DATABASE_URL=postgresql..." into the value field.
+    if url.upper().startswith("DATABASE_URL="):
+        url = url.split("=", 1)[1].strip().strip('"').strip("'")
     if url.startswith("postgres://"):
         url = "postgresql+psycopg://" + url[len("postgres://") :]
     elif url.startswith("postgresql://") and "+psycopg" not in url.split("://", 1)[0]:
