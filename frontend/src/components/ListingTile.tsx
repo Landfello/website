@@ -102,16 +102,16 @@ export function ListingTile({
       <span className="rounded-full border border-emerald-950/10 bg-emerald-50/80 px-2 py-0.5 text-[11px] text-emerald-900">
         {l.landType}
       </span>
-      {l.category === "House" && l.bedrooms ? (
-        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-950/10 bg-emerald-50/80 px-2 py-0.5 text-[11px] text-emerald-900">
+      {l.category === "House" && typeof l.bedrooms === "number" ? (
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-900/20 bg-emerald-900 px-2 py-0.5 text-[11px] font-semibold text-white">
           <BedDouble className="h-3 w-3" />
-          {l.bedrooms} bed
+          {l.bedrooms} bed{l.bedrooms === 1 ? "" : "s"}
         </span>
       ) : null}
-      {l.category === "House" && l.bathrooms ? (
-        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-950/10 bg-emerald-50/80 px-2 py-0.5 text-[11px] text-emerald-900">
+      {l.category === "House" && typeof l.bathrooms === "number" ? (
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-800/20 bg-emerald-800 px-2 py-0.5 text-[11px] font-semibold text-white">
           <Bath className="h-3 w-3" />
-          {l.bathrooms} bath
+          {l.bathrooms} bath{l.bathrooms === 1 ? "" : "s"}
         </span>
       ) : null}
       {l.tags.slice(0, compact ? 3 : 2).map((tag) => (

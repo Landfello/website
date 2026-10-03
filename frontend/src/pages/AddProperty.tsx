@@ -205,7 +205,7 @@ export default function AddProperty() {
       const beds = parseInt(formData.bedrooms, 10);
       const baths = parseInt(formData.bathrooms, 10);
       if (!beds || beds < 1 || !baths || baths < 1) {
-        setError("Please enter bedrooms and bathrooms for house listings");
+        setError("Please enter bedrooms and baths for house listings");
         return;
       }
     }
@@ -446,7 +446,7 @@ export default function AddProperty() {
                     required
                   />
                 </Field>
-                <Field label="Bathrooms" icon={<Home className="h-4 w-4" />} required>
+                <Field label="Baths" icon={<Home className="h-4 w-4" />} required>
                   <Input
                     type="number"
                     name="bathrooms"

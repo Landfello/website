@@ -12,6 +12,8 @@ import {
   Phone,
   Check,
   X,
+  BedDouble,
+  Bath,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -104,16 +106,23 @@ export function PropertyDetailsDialog({
     ? `$${property.price.toLocaleString()}`
     : "Price on request";
 
+  const isHouse = property.category === "House";
+  const bedrooms =
+    typeof property.bedrooms === "number" && !Number.isNaN(property.bedrooms)
+      ? property.bedrooms
+      : null;
+  const bathrooms =
+    typeof property.bathrooms === "number" && !Number.isNaN(property.bathrooms)
+      ? property.bathrooms
+      : null;
+
   const facts = [
-    { label: "Category", value: property.category === "House" ? "House" : "Land" },
+    { label: "Category", value: isHouse ? "House" : "Land" },
     { label: "User purpose", value: property.propertyType },
     { label: "Area", value: `${property.areaAcres} Acres` },
-    ...(property.category === "House" && property.bedrooms
-      ? [{ label: "Bedrooms", value: String(property.bedrooms) }]
-      : []),
-    ...(property.category === "House" && property.bathrooms
-      ? [{ label: "Bathrooms", value: String(property.bathrooms) }]
-      : []),
+    // Beds / baths only apply to houses — never shown on land listings.
+    ...(isHouse && bedrooms != null ? [{ label: "Bedrooms", value: String(bedrooms) }] : []),
+    ...(isHouse && bathrooms != null ? [{ label: "Baths", value: String(bathrooms) }] : []),
     { label: "Tenure", value: property.tenure || "Freehold" },
     { label: "Country", value: property.country },
     { label: "City", value: property.city },
@@ -274,19 +283,46 @@ export function PropertyDetailsDialog({
                     <MapPin className="h-4 w-4" />
                     {address}
                   </div>
+                  {isHouse && (bedrooms != null || bathrooms != null) ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {bedrooms != null ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-900 px-3 py-1 text-sm font-semibold text-white">
+                          <BedDouble className="h-4 w-4" />
+                          {bedrooms} {bedrooms === 1 ? "bedroom" : "bedrooms"}
+                        </span>
+                      ) : null}
+                      {bathrooms != null ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-800 px-3 py-1 text-sm font-semibold text-white">
+                          <Bath className="h-4 w-4" />
+                          {bathrooms} {bathrooms === 1 ? "bath" : "baths"}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="mt-3 grid grid-cols-3 gap-2">
-                  <BigStat value={property.category === "House" ? "House" : "Land"} label="category" />
-                  <BigStat value={property.propertyType} label="purpose" />
-                  <BigStat value={property.areaAcres.toFixed(2)} label="acres" />
-                  {property.category === "House" && property.bedrooms ? (
-                    <BigStat value={String(property.bedrooms)} label="beds" />
-                  ) : null}
-                  {property.category === "House" && property.bathrooms ? (
-                    <BigStat value={String(property.bathrooms)} label="baths" />
-                  ) : null}
-                  <BigStat value={property.tenure || "Freehold"} label="tenure" />
+                  {isHouse ? (
+                    <>
+                      {bedrooms != null ? (
+                        <BigStat value={String(bedrooms)} label="bedrooms" />
+                      ) : null}
+                      {bathrooms != null ? (
+                        <BigStat value={String(bathrooms)} label="baths" />
+                      ) : null}
+                      <BigStat value={property.areaAcres.toFixed(2)} label="acres" />
+                      <BigStat value="House" label="category" />
+                      <BigStat value={property.propertyType} label="purpose" />
+                      <BigStat value={property.tenure || "Freehold"} label="tenure" />
+                    </>
+                  ) : (
+                    <>
+                      <BigStat value="Land" label="category" />
+                      <BigStat value={property.propertyType} label="purpose" />
+                      <BigStat value={property.areaAcres.toFixed(2)} label="acres" />
+                      <BigStat value={property.tenure || "Freehold"} label="tenure" />
+                    </>
+                  )}
                 </div>
 
                 <div className="mt-3 rounded-xl border border-emerald-100 bg-white p-3">
