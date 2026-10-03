@@ -2,6 +2,7 @@ import os
 import sys
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,10 +10,31 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Prisma/Supabase copy-paste often adds these; psycopg rejects them.
+_UNSUPPORTED_PG_QUERY_KEYS = frozenset({"pgbouncer", "connection_limit", "pool_timeout"})
+
 
 def _sqlite_allowed() -> bool:
     """SQLite is only for automated tests — never for local/prod app data."""
     return os.environ.get("ALLOW_SQLITE") == "1" or "pytest" in sys.modules
+
+
+def _normalize_database_url(url: str) -> str:
+    """Driver prefix + drop query options psycopg does not accept."""
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url[len("postgres://") :]
+    elif url.startswith("postgresql://") and "+psycopg" not in url.split("://", 1)[0]:
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
+
+    parts = urlsplit(url)
+    if not parts.query:
+        return url
+    kept = [
+        (k, v)
+        for k, v in parse_qsl(parts.query, keep_blank_values=True)
+        if k.lower() not in _UNSUPPORTED_PG_QUERY_KEYS
+    ]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(kept), parts.fragment))
 
 
 class Settings(BaseSettings):
@@ -75,13 +97,9 @@ class Settings(BaseSettings):
             raise RuntimeError(
                 "SQLite is no longer supported for Landfello. "
                 "Set DATABASE_URL to the Supabase Postgres connection string "
-                "(Render env or Supabase → Project Settings → Database)."
+                "(Render → Environment, or Supabase → Connect → Transaction pooler)."
             )
-        if url.startswith("postgres://"):
-            return "postgresql+psycopg://" + url[len("postgres://") :]
-        if url.startswith("postgresql://") and "+psycopg" not in url.split("://", 1)[0]:
-            return "postgresql+psycopg://" + url[len("postgresql://") :]
-        return url
+        return _normalize_database_url(url)
 
     @property
     def uses_supabase_auth(self) -> bool:

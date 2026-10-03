@@ -13,14 +13,29 @@ from sqlalchemy import (
     create_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from .config import get_settings
 
 
 settings = get_settings()
 _db_url = settings.sqlalchemy_database_url
-connect_args = {"check_same_thread": False} if _db_url.startswith("sqlite") else {}
-engine = create_engine(_db_url, connect_args=connect_args, pool_pre_ping=not _db_url.startswith("sqlite"))
+_is_sqlite = _db_url.startswith("sqlite")
+# Transaction pooler (port 6543) does not support prepared statements / server sessions.
+_uses_transaction_pooler = (not _is_sqlite) and ":6543" in _db_url
+if _is_sqlite:
+    connect_args: dict = {"check_same_thread": False}
+elif _uses_transaction_pooler:
+    connect_args = {"prepare_threshold": None}
+else:
+    connect_args = {}
+_engine_kwargs: dict = {
+    "connect_args": connect_args,
+    "pool_pre_ping": not _is_sqlite,
+}
+if _uses_transaction_pooler:
+    _engine_kwargs["poolclass"] = NullPool
+engine = create_engine(_db_url, **_engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
