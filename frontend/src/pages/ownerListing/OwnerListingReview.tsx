@@ -16,6 +16,7 @@ import { getListing, saveListing } from "@/features/ownerListing/store";
 import { STEP_META, type OwnerListingDraft } from "@/features/ownerListing/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { createProperty, type Property } from "@/services/propertyService";
+import { resolveListingImages } from "@/services/uploads";
 import {
   formatLocation,
   formatMoney,
@@ -105,9 +106,7 @@ export default function OwnerListingReview() {
         tenure: "Freehold",
         price: draft.pricing.askingPrice ?? undefined,
         tags: [],
-        images: draft.media.photos
-          .map((p) => p.dataUrl)
-          .filter((url): url is string => Boolean(url)),
+        images: await resolveListingImages(draft.media.photos.map((p) => p.dataUrl)),
         contactName: draft.identity.fullName || currentUser.email,
         contactPhone: draft.identity.phone || "n/a",
         contactEmail: email,

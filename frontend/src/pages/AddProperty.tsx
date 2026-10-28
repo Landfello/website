@@ -54,6 +54,7 @@ export default function AddProperty() {
   const navigate = useNavigate();
   const { currentUser, userProfile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [error, setError] = useState("");
 
   // Only agent accounts can list properties on the marketplace
@@ -115,6 +116,8 @@ export default function AddProperty() {
     if (!files || files.length === 0) return;
 
     try {
+      setError("");
+      setUploadingImages(true);
       const urls = await uploadImageFiles(Array.from(files));
       setFormData((prev) => ({
         ...prev,
@@ -123,6 +126,7 @@ export default function AddProperty() {
     } catch (err: any) {
       setError(err.message || "Failed to process images");
     } finally {
+      setUploadingImages(false);
       e.target.value = "";
     }
   };
@@ -504,11 +508,12 @@ export default function AddProperty() {
                     type="file"
                     accept="image/*"
                     multiple
+                    disabled={uploadingImages}
                     onChange={handleImageUpload}
                     className="hidden"
                   />
                   <span className="text-sm font-medium text-emerald-950/70 block mb-1">
-                    Click to upload or drag and drop images
+                    {uploadingImages ? "Uploading images…" : "Click to upload or drag and drop images"}
                   </span>
                   <div className="text-xs text-emerald-950/50">
                     PNG, JPG, GIF up to 5MB each • At least 2 images required

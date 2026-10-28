@@ -15,7 +15,7 @@ services:
       - key: FRONTEND_URL
         value: https://website-zk2l.vercel.app
       - key: CORS_ORIGINS
-        value: https://website-zk2l.vercel.app,http://localhost:5173
+        value: https://website-zk2l.vercel.app,https://www.landfello.com,https://landfello.com,http://localhost:5173
       - key: DATABASE_URL
         sync: false
       - key: SUPABASE_URL

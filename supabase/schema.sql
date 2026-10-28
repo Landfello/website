@@ -148,3 +148,8 @@ create policy "Public can read properties"
   using (true);
 
 -- Writes go through the FastAPI service role connection, which bypasses RLS.
+
+-- Public bucket for land photos. The API also creates this on first upload.
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('listing-images', 'listing-images', true, 5242880)
+on conflict (id) do nothing;

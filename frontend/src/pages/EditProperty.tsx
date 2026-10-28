@@ -58,6 +58,7 @@ export default function EditProperty() {
   const { currentUser, userProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     title: "",
@@ -168,6 +169,8 @@ export default function EditProperty() {
     if (!files || files.length === 0) return;
 
     try {
+      setError("");
+      setUploadingImages(true);
       const urls = await uploadImageFiles(Array.from(files));
       setFormData((prev) => ({
         ...prev,
@@ -176,6 +179,7 @@ export default function EditProperty() {
     } catch (err: any) {
       setError(err.message || "Failed to process images");
     } finally {
+      setUploadingImages(false);
       e.target.value = "";
     }
   };
@@ -555,11 +559,12 @@ export default function EditProperty() {
                     type="file"
                     accept="image/*"
                     multiple
+                    disabled={uploadingImages}
                     onChange={handleImageUpload}
                     className="hidden"
                   />
                   <span className="text-sm font-medium text-emerald-950/70 block mb-1">
-                    Click to upload or drag and drop images
+                    {uploadingImages ? "Uploading images…" : "Click to upload or drag and drop images"}
                   </span>
                   <div className="text-xs text-emerald-950/50">
                     PNG, JPG, GIF up to 5MB each • At least 2 images required

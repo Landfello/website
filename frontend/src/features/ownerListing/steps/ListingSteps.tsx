@@ -38,6 +38,7 @@ import {
   SIZE_UNITS,
 } from "@/features/ownerListing/constants";
 import { documentChecklistFor } from "@/features/ownerListing/store";
+import { uploadImageFiles } from "@/services/uploads";
 import type {
   CoOwner,
   FileReviewStatus,
@@ -1212,12 +1213,20 @@ function Step8Photos({
       (f) => f.type.startsWith("image/") || /\.(jpe?g|png|gif|webp)$/i.test(f.name),
     );
     const added: ListingPhoto[] = [];
-    for (const file of files) {
-      let dataUrl: string | undefined;
-      try {
-        dataUrl = await readImageAsDataUrl(file);
-      } catch {
-        dataUrl = undefined;
+    let uploadedUrls: string[] = [];
+    try {
+      uploadedUrls = await uploadImageFiles(files);
+    } catch {
+      uploadedUrls = [];
+    }
+    for (const [index, file] of files.entries()) {
+      let dataUrl: string | undefined = uploadedUrls[index];
+      if (!dataUrl) {
+        try {
+          dataUrl = await readImageAsDataUrl(file);
+        } catch {
+          dataUrl = undefined;
+        }
       }
       added.push({
         id: newPhotoId(),

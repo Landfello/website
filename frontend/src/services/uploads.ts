@@ -26,8 +26,43 @@ export async function uploadImageFiles(files: File[]): Promise<string[]> {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const detail = data?.detail || data?.error || `Upload failed (${response.status})`;
-    throw new Error(typeof detail === "string" ? detail : "Upload failed");
+    const raw = data?.detail || data?.error;
+    if (response.status === 404 || raw === "Not Found") {
+      throw new Error("Image upload is not available on the server yet. Please try again in a minute.");
+    }
+    throw new Error(typeof raw === "string" && raw ? raw : `Upload failed (${response.status})`);
   }
   return (data.urls || []) as string[];
+}
+
+function dataUrlToFile(dataUrl: string, index: number): File | null {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) return null;
+  const mime = match[1];
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const ext = mime.split("/")[1] || "jpg";
+  return new File([bytes], `photo-${index + 1}.${ext}`, { type: mime });
+}
+
+/** Upload local data URLs and keep already-hosted https URLs. */
+export async function resolveListingImages(images: Array<string | undefined | null>): Promise<string[]> {
+  const remote: string[] = [];
+  const localFiles: File[] = [];
+  images.forEach((image, index) => {
+    if (!image) return;
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+      remote.push(image);
+      return;
+    }
+    if (image.startsWith("data:")) {
+      const file = dataUrlToFile(image, index);
+      if (file) localFiles.push(file);
+    }
+  });
+  const uploaded = await uploadImageFiles(localFiles);
+  return [...remote, ...uploaded];
 }

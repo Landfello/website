@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     frontend_url: str = "https://website-zk2l.vercel.app"
     cors_origins: str = (
         "https://website-zk2l.vercel.app,"
+        "https://www.landfello.com,"
+        "https://landfello.com,"
         "http://localhost:5173,"
         "http://localhost:3000,"
         "http://127.0.0.1:5173"

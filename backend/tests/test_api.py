@@ -107,6 +107,12 @@ def test_buyer_can_create_listing(client):
     assert resp.json()["price"] == 1000
 
 
+def test_upload_route_exists_and_requires_auth(client):
+    missing_auth = client.post("/api/uploads")
+    assert missing_auth.status_code != 404, missing_auth.text
+    assert missing_auth.status_code in (401, 403, 422)
+
+
 def test_property_detail_is_public(client):
     listings = client.get("/api/properties").json()
     property_id = listings[0]["propertyID"]
