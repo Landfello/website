@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/lib/session";
+import { getAccessToken, isAuthTokenError, sessionExpiredMessage } from "@/lib/session";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
@@ -55,7 +55,11 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const msg = data?.detail || data?.error || raw || `Request failed (${response.status})`;
-    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+    const text = typeof msg === "string" ? msg : JSON.stringify(msg);
+    if (response.status === 401 || isAuthTokenError(text)) {
+      throw new Error(sessionExpiredMessage());
+    }
+    throw new Error(text);
   }
 
   return data as T;

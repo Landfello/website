@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/lib/session";
+import { getAccessToken, isAuthTokenError, sessionExpiredMessage } from "@/lib/session";
 import { getSupabase } from "@/lib/supabase";
 
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
@@ -52,7 +52,12 @@ async function uploadViaApi(files: File[], token: string): Promise<string[] | "m
   const raw = typeof data?.detail === "string" ? data.detail : data?.error;
   const text = typeof raw === "string" ? raw : "";
 
-  if (response.status === 404 || /not found/i.test(text)) {
+  if (
+    response.status === 404 ||
+    response.status === 401 ||
+    /not found/i.test(text) ||
+    isAuthTokenError(text)
+  ) {
     return "missing";
   }
   if (!response.ok) {
@@ -71,8 +76,12 @@ async function uploadViaSupabase(files: File[]): Promise<string[]> {
     throw new Error("Cloud image storage is not configured.");
   }
 
+  await getAccessToken();
   const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData.session?.user?.id || "anonymous";
+  const userId = sessionData.session?.user?.id;
+  if (!userId) {
+    throw new Error(sessionExpiredMessage());
+  }
   const urls: string[] = [];
 
   for (const file of files) {
@@ -84,6 +93,9 @@ async function uploadViaSupabase(files: File[]): Promise<string[]> {
     });
     if (error) {
       const message = error.message || "Could not upload image to storage.";
+      if (isAuthTokenError(message)) {
+        throw new Error(sessionExpiredMessage());
+      }
       if (/not found|bucket/i.test(message)) {
         throw new Error("Cloud photo storage is not ready yet.");
       }

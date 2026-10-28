@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { createProperty, Property } from "@/services/propertyService";
 import { uploadImageFiles } from "@/services/uploads";
+import { isAuthTokenError, sessionExpiredMessage } from "@/lib/session";
 import {
   MapPin,
   DollarSign,
@@ -126,9 +127,11 @@ export default function AddProperty() {
     } catch (err: any) {
       const message = String(err?.message || "");
       setError(
-        /not found/i.test(message)
-          ? "Could not save the land photos. Please try again in a moment."
-          : message || "Failed to process images",
+        isAuthTokenError(message)
+          ? sessionExpiredMessage()
+          : /not found/i.test(message)
+            ? "Could not save the land photos. Please try again in a moment."
+            : message || "Failed to process images",
       );
     } finally {
       setUploadingImages(false);

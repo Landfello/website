@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPropertyById, updateProperty, Property } from "@/services/propertyService";
 import { uploadImageFiles } from "@/services/uploads";
+import { isAuthTokenError, sessionExpiredMessage } from "@/lib/session";
 import { TopNav } from "@/components/Profile/TopNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -179,9 +180,11 @@ export default function EditProperty() {
     } catch (err: any) {
       const message = String(err?.message || "");
       setError(
-        /not found/i.test(message)
-          ? "Could not save the land photos. Please try again in a moment."
-          : message || "Failed to process images",
+        isAuthTokenError(message)
+          ? sessionExpiredMessage()
+          : /not found/i.test(message)
+            ? "Could not save the land photos. Please try again in a moment."
+            : message || "Failed to process images",
       );
     } finally {
       setUploadingImages(false);

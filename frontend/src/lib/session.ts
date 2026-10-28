@@ -31,14 +31,36 @@ export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export function isAuthTokenError(message: string): boolean {
+  return /invalid or expired token|jwt expired|session expired|token has expired/i.test(
+    message,
+  );
+}
+
+export function sessionExpiredMessage(): string {
+  return "Your session expired. Please sign out and sign in again.";
+}
+
 export async function getAccessToken(): Promise<string | null> {
   const supabase = getSupabase();
   if (supabase) {
     const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-      return token;
+    let session = data.session;
+    const expiresAtMs = session?.expires_at ? session.expires_at * 1000 : 0;
+    const needsRefresh = Boolean(session) && (!expiresAtMs || expiresAtMs < Date.now() + 60_000);
+
+    if (needsRefresh) {
+      const { data: refreshed, error } = await supabase.auth.refreshSession();
+      if (!error && refreshed.session) {
+        session = refreshed.session;
+      } else if (expiresAtMs && expiresAtMs < Date.now()) {
+        session = null;
+      }
+    }
+
+    if (session?.access_token) {
+      localStorage.setItem(TOKEN_KEY, session.access_token);
+      return session.access_token;
     }
   }
   return getStoredToken();

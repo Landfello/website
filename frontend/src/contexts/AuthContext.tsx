@@ -7,7 +7,9 @@ import {
   getAccessToken,
   getStoredToken,
   getStoredUser,
+  isAuthTokenError,
   persistSession,
+  sessionExpiredMessage,
   toAppUser,
 } from "@/lib/session";
 import { getSupabase } from "@/lib/supabase";
@@ -146,7 +148,8 @@ function cleanAuthParamsFromUrl() {
 async function parseJson(response: Response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.detail || data.error || `Request failed (${response.status})`);
+    const detail = String(data.detail || data.error || `Request failed (${response.status})`);
+    throw new Error(isAuthTokenError(detail) ? sessionExpiredMessage() : detail);
   }
   return data;
 }
@@ -168,13 +171,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(profile);
   };
 
+  function profileFromLocalSession(token: string, accountType?: AccountType): UserProfile | null {
+    const stored = getStoredUser();
+    const nextType = accountType || stored?.profile.accountType || "investor";
+    const profile: UserProfile = {
+      ...(stored?.profile || { accountType: nextType }),
+      accountType: nextType,
+      accountTypeChosen:
+        Boolean(accountType) ||
+        Boolean(stored?.profile.accountTypeChosen) ||
+        Boolean(stored?.profile.accountType),
+    };
+    if (!stored?.uid && !stored?.email) return stored?.profile || null;
+    applyAuth(token, {
+      uid: stored.uid,
+      email: stored.email,
+      photoURL: stored.photoURL,
+      profile,
+    });
+    return profile;
+  }
+
   async function loadProfile(token: string): Promise<UserProfile> {
     const response = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const user = await parseJson(response);
-    applyAuth(token, user);
-    return user.profile as UserProfile;
+    if (response.ok) {
+      const user = await response.json();
+      applyAuth(token, user);
+      return user.profile as UserProfile;
+    }
+
+    const supabase = getSupabase();
+    const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+    const meta = (session?.user?.user_metadata || {}) as Record<string, unknown>;
+    const stored = getStoredUser();
+    const uid = session?.user?.id || stored?.uid;
+    const email = session?.user?.email || stored?.email;
+    if (uid && email) {
+      const fromMeta = meta.account_type;
+      const accountType =
+        fromMeta === "agent" || fromMeta === "investor"
+          ? fromMeta
+          : stored?.profile.accountType || "investor";
+      const profile: UserProfile = {
+        ...(stored?.profile || { accountType }),
+        accountType,
+        accountTypeChosen:
+          Boolean(stored?.profile.accountTypeChosen) ||
+          fromMeta === "agent" ||
+          fromMeta === "investor",
+        firstName: stored?.profile.firstName || (typeof meta.first_name === "string" ? meta.first_name : undefined),
+        lastName: stored?.profile.lastName || (typeof meta.last_name === "string" ? meta.last_name : undefined),
+        photoURL:
+          stored?.profile.photoURL ||
+          (typeof meta.avatar_url === "string" ? meta.avatar_url : undefined) ||
+          (typeof meta.picture === "string" ? meta.picture : undefined),
+      };
+      applyAuth(token, {
+        uid,
+        email,
+        photoURL: profile.photoURL || session?.user?.user_metadata?.avatar_url,
+        profile,
+      });
+      return profile;
+    }
+
+    const fallback = profileFromLocalSession(token);
+    if (fallback) return fallback;
+    return parseJson(response).then((user) => user.profile as UserProfile);
   }
 
   async function applyAccountType(token: string, accountType: AccountType): Promise<UserProfile> {
@@ -186,9 +251,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       body: JSON.stringify({ accountType }),
     });
-    const user = await parseJson(response);
-    applyAuth(token, user);
-    return user.profile as UserProfile;
+    if (response.ok) {
+      const user = await response.json();
+      applyAuth(token, user);
+      return user.profile as UserProfile;
+    }
+
+    const supabase = getSupabase();
+    const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+    const stored = getStoredUser();
+    const uid = session?.user?.id || stored?.uid;
+    const email = session?.user?.email || stored?.email;
+    if (uid && email) {
+      const profile: UserProfile = {
+        ...(stored?.profile || { accountType }),
+        accountType,
+        accountTypeChosen: true,
+      };
+      applyAuth(token, {
+        uid,
+        email,
+        photoURL: stored?.photoURL || session?.user?.user_metadata?.avatar_url,
+        profile,
+      });
+      return profile;
+    }
+
+    return parseJson(response).then((user) => user.profile as UserProfile);
   }
 
   /**
