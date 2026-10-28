@@ -49,13 +49,14 @@ async function uploadViaApi(files: File[], token: string): Promise<string[] | "m
     body,
   });
   const data = await response.json().catch(() => ({}));
-  const raw = data?.detail || data?.error;
+  const raw = typeof data?.detail === "string" ? data.detail : data?.error;
+  const text = typeof raw === "string" ? raw : "";
 
-  if (response.status === 404 || raw === "Not Found") {
+  if (response.status === 404 || /not found/i.test(text)) {
     return "missing";
   }
   if (!response.ok) {
-    throw new Error(typeof raw === "string" && raw ? raw : `Upload failed (${response.status})`);
+    throw new Error(text || `Upload failed (${response.status})`);
   }
   const urls = (data.urls || []) as string[];
   if (!urls.length) {
@@ -82,7 +83,11 @@ async function uploadViaSupabase(files: File[]): Promise<string[]> {
       contentType: file.type || "image/jpeg",
     });
     if (error) {
-      throw new Error(error.message || "Could not upload image to storage.");
+      const message = error.message || "Could not upload image to storage.";
+      if (/not found|bucket/i.test(message)) {
+        throw new Error("Cloud photo storage is not ready yet.");
+      }
+      throw new Error(message);
     }
     const { data } = supabase.storage.from(LISTING_IMAGE_BUCKET).getPublicUrl(path);
     if (!data.publicUrl) {

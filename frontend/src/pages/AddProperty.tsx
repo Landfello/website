@@ -124,7 +124,12 @@ export default function AddProperty() {
         images: [...prev.images, ...urls],
       }));
     } catch (err: any) {
-      setError(err.message || "Failed to process images");
+      const message = String(err?.message || "");
+      setError(
+        /not found/i.test(message)
+          ? "Could not save the land photos. Please try again in a moment."
+          : message || "Failed to process images",
+      );
     } finally {
       setUploadingImages(false);
       e.target.value = "";
