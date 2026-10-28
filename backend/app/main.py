@@ -3,8 +3,9 @@ import uuid
 from typing import Optional
 
 import httpx
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from .auth import create_access_token, ensure_user_from_claims, get_current_user, hash_password, verify_password
@@ -28,13 +29,37 @@ from .storage import new_object_key, upload_bytes
 settings = get_settings()
 app = FastAPI(title=settings.app_name, version="1.0.0")
 
+_CORS_ORIGINS = list(
+    dict.fromkeys(
+        settings.cors_origin_list
+        + [
+            "https://www.landfello.com",
+            "https://landfello.com",
+            "https://website-zk2l.vercel.app",
+        ]
+    )
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list + ["*"],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def keep_cors_on_errors(request: Request, call_next):
+    origin = request.headers.get("origin")
+    try:
+        response = await call_next(request)
+    except Exception:
+        response = JSONResponse({"detail": "Server error"}, status_code=500)
+    if origin and origin in _CORS_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Vary"] = "Origin"
+    return response
 
 
 def _checked_images(images: list[str]) -> list[str]:

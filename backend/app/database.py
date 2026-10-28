@@ -130,30 +130,43 @@ def get_db():
         db.close()
 
 
-def _ensure_sqlite_columns() -> None:
-    """Add new columns on existing SQLite databases (create_all does not alter)."""
-    if not settings.database_url.startswith("sqlite"):
-        return
-    with engine.begin() as conn:
-        rows = conn.exec_driver_sql("PRAGMA table_info(properties)").fetchall()
-        existing = {row[1] for row in rows}
-        alterations = [
-            ("category", "ALTER TABLE properties ADD COLUMN category VARCHAR DEFAULT 'Land'"),
-            ("bedrooms", "ALTER TABLE properties ADD COLUMN bedrooms INTEGER"),
-            ("bathrooms", "ALTER TABLE properties ADD COLUMN bathrooms INTEGER"),
-        ]
-        for name, sql in alterations:
-            if name not in existing:
-                conn.exec_driver_sql(sql)
+def _table_columns(conn, table: str) -> set[str]:
+    dialect = engine.dialect.name
+    if dialect == "sqlite":
+        rows = conn.exec_driver_sql(f"PRAGMA table_info({table})").fetchall()
+        return {row[1] for row in rows}
+    rows = conn.exec_driver_sql(
+        "SELECT column_name FROM information_schema.columns "
+        f"WHERE table_schema = 'public' AND table_name = '{table}'"
+    ).fetchall()
+    return {row[0] for row in rows}
 
-        user_rows = conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
-        user_cols = {row[1] for row in user_rows}
-        if user_rows and "account_type_chosen" not in user_cols:
+
+def _ensure_columns() -> None:
+    """Add columns that create_all will not add to an existing table."""
+    property_alters = [
+        ("category", "ALTER TABLE properties ADD COLUMN category VARCHAR DEFAULT 'Land'"),
+        ("bedrooms", "ALTER TABLE properties ADD COLUMN bedrooms INTEGER"),
+        ("bathrooms", "ALTER TABLE properties ADD COLUMN bathrooms INTEGER"),
+        ("lease_term", "ALTER TABLE properties ADD COLUMN lease_term VARCHAR"),
+        ("monthly_rent", "ALTER TABLE properties ADD COLUMN monthly_rent DOUBLE PRECISION"),
+        ("status", "ALTER TABLE properties ADD COLUMN status VARCHAR DEFAULT 'available'"),
+    ]
+    with engine.begin() as conn:
+        existing = _table_columns(conn, "properties")
+        if existing:
+            for name, sql in property_alters:
+                if name not in existing:
+                    conn.exec_driver_sql(sql)
+
+        user_cols = _table_columns(conn, "users")
+        if user_cols and "account_type_chosen" not in user_cols:
+            default = "1" if engine.dialect.name == "sqlite" else "true"
             conn.exec_driver_sql(
-                "ALTER TABLE users ADD COLUMN account_type_chosen BOOLEAN NOT NULL DEFAULT 1"
+                f"ALTER TABLE users ADD COLUMN account_type_chosen BOOLEAN NOT NULL DEFAULT {default}"
             )
 
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
-    _ensure_sqlite_columns()
+    _ensure_columns()
