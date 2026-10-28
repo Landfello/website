@@ -61,7 +61,7 @@ The React app lives in `frontend/`. In Vercel, set **Root Directory** to `fronte
 
 | Variable | Example |
 |----------|---------|
-| `VITE_API_BASE_URL` | `https://website-u5qk.onrender.com/api` |
+| `VITE_API_BASE_URL` | `https://website-5zj4.onrender.com/api` |
 | `VITE_FIREBASE_API_KEY` | from Firebase console |
 | `VITE_FIREBASE_AUTH_DOMAIN` | `your-app.firebaseapp.com` |
 | `VITE_FIREBASE_PROJECT_ID` | `your-app` |
@@ -70,7 +70,7 @@ The React app lives in `frontend/`. In Vercel, set **Root Directory** to `fronte
 | `VITE_FIREBASE_APP_ID` | from Firebase console |
 | `VITE_FIREBASE_MEASUREMENT_ID` | optional |
 
-6. Deploy — production already points at `https://website-u5qk.onrender.com/api` via `frontend/.env.production`
+6. Deploy — production already points at `https://website-5zj4.onrender.com/api` via `frontend/.env.production`
 7. Keep the API’s `FRONTEND_URL` and `CORS_ORIGINS` set to `https://website-zk2l.vercel.app` on Render
 
 `VITE_*` values are baked in at build time. After changing them, trigger a new Vercel deployment.
