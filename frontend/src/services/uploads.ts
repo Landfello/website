@@ -1,3 +1,4 @@
+import { getApiCapabilities } from "@/lib/apiStatus";
 import { getAccessToken, isAuthTokenError, sessionExpiredMessage } from "@/lib/session";
 import { getSupabase } from "@/lib/supabase";
 
@@ -19,12 +20,31 @@ function extensionFor(file: File): string {
   return "jpg";
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
+function compressImageFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
-    reader.readAsDataURL(file);
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      const max = 1280;
+      const scale = Math.min(1, max / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error(`Could not read ${file.name}`));
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error(`Could not read ${file.name}`));
+    };
+    image.src = objectUrl;
   });
 }
 
@@ -117,27 +137,23 @@ export async function uploadImageFiles(files: File[]): Promise<string[]> {
   const token = await getAccessToken();
   if (!token) throw new Error("You must be signed in to upload images");
 
-  try {
-    const fromApi = await uploadViaApi(files, token);
-    if (fromApi !== "missing") return fromApi;
-  } catch (err: any) {
-    const message = String(err?.message || "");
-    if (message.includes("not an image") || message.includes("too large") || message.includes("5MB")) {
-      throw err;
+  const api = await getApiCapabilities();
+  if (api.uploads) {
+    try {
+      const fromApi = await uploadViaApi(files, token);
+      if (fromApi !== "missing") return fromApi;
+    } catch (err: any) {
+      const message = String(err?.message || "");
+      if (message.includes("not an image") || message.includes("too large") || message.includes("5MB")) {
+        throw err;
+      }
     }
-    // Fall through to Supabase / local preview if the API is old or storage is misconfigured.
   }
 
   try {
     return await uploadViaSupabase(files);
   } catch {
-    const total = files.reduce((sum, file) => sum + file.size, 0);
-    if (total <= 900_000) {
-      return Promise.all(files.map((file) => readFileAsDataUrl(file)));
-    }
-    throw new Error(
-      "Could not upload images. Cloud storage is not ready yet — try smaller photos or try again in a minute."
-    );
+    return Promise.all(files.map((file) => compressImageFile(file)));
   }
 }
 

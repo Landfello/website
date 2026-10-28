@@ -12,6 +12,7 @@ import {
   sessionExpiredMessage,
   toAppUser,
 } from "@/lib/session";
+import { getApiCapabilities } from "@/lib/apiStatus";
 import { getSupabase } from "@/lib/supabase";
 import { dashboardPathForRole } from "@/lib/roles";
 import { uploadImageFiles } from "@/services/uploads";
@@ -193,13 +194,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function loadProfile(token: string): Promise<UserProfile> {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (response.ok) {
-      const user = await response.json();
-      applyAuth(token, user);
-      return user.profile as UserProfile;
+    const api = await getApiCapabilities();
+    if (api.modernAuth) {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const user = await response.json();
+        applyAuth(token, user);
+        return user.profile as UserProfile;
+      }
     }
 
     const supabase = getSupabase();
@@ -239,25 +243,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fallback = profileFromLocalSession(token);
     if (fallback) return fallback;
-    return parseJson(response).then((user) => user.profile as UserProfile);
+    throw new Error(sessionExpiredMessage());
   }
 
   async function applyAccountType(token: string, accountType: AccountType): Promise<UserProfile> {
-    const response = await fetch(`${API_BASE_URL}/auth/account-type`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ accountType }),
-    });
-    if (response.ok) {
-      const user = await response.json();
-      applyAuth(token, user);
-      return user.profile as UserProfile;
+    const api = await getApiCapabilities();
+    if (api.accountType) {
+      const response = await fetch(`${API_BASE_URL}/auth/account-type`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ accountType }),
+      });
+      if (response.ok) {
+        const user = await response.json();
+        applyAuth(token, user);
+        return user.profile as UserProfile;
+      }
     }
 
     const supabase = getSupabase();
+    if (supabase) {
+      await supabase.auth.updateUser({
+        data: { account_type: accountType, account_type_chosen: true },
+      });
+    }
     const session = supabase ? (await supabase.auth.getSession()).data.session : null;
     const stored = getStoredUser();
     const uid = session?.user?.id || stored?.uid;
@@ -277,7 +289,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return profile;
     }
 
-    return parseJson(response).then((user) => user.profile as UserProfile);
+    throw new Error(sessionExpiredMessage());
   }
 
   /**

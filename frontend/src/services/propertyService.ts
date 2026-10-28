@@ -1,4 +1,16 @@
 import { getAccessToken, isAuthTokenError, sessionExpiredMessage } from "@/lib/session";
+import {
+  createPropertyInSupabase,
+  deletePropertyInSupabase,
+  getPropertyFromSupabase,
+  listLocalProperties,
+  listPropertiesFromSupabase,
+  listUserPropertiesFromSupabase,
+  mergeProperties,
+  removeLocalProperty,
+  saveLocalProperty,
+  updatePropertyInSupabase,
+} from "@/services/supabaseProperties";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
@@ -65,6 +77,10 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
+function shouldUseSupabaseFallback(status: number, text: string): boolean {
+  return status === 401 || status === 403 || status === 404 || isAuthTokenError(text);
+}
+
 export async function createProperty(property: Property): Promise<Property> {
   const token = await getAuthToken();
   if (!token) throw new Error("You must be signed in to create a property");
@@ -78,6 +94,14 @@ export async function createProperty(property: Property): Promise<Property> {
     body: JSON.stringify(property),
   });
 
+  if (shouldUseSupabaseFallback(response.status, await response.clone().text())) {
+    try {
+      return await createPropertyInSupabase(property);
+    } catch {
+      return saveLocalProperty(property);
+    }
+  }
+
   return parseResponse<Property>(response);
 }
 
@@ -88,11 +112,24 @@ export async function getUserProperties(userId: string): Promise<Property[]> {
   const response = await fetch(`${API_BASE_URL}/properties/user/${encodeURIComponent(userId)}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  return parseResponse<Property[]>(response);
+  if (shouldUseSupabaseFallback(response.status, await response.clone().text())) {
+    return mergeProperties(await listUserPropertiesFromSupabase(userId), listLocalProperties(userId));
+  }
+  const fromApi = await parseResponse<Property[]>(response);
+  return mergeProperties(
+    fromApi,
+    mergeProperties(await listUserPropertiesFromSupabase(userId), listLocalProperties(userId)),
+  );
 }
 
 export async function getPropertyById(propertyId: string, _userId?: string): Promise<Property> {
   const response = await fetch(`${API_BASE_URL}/properties/${propertyId}`);
+  if (!response.ok) {
+    const fromSupabase = await getPropertyFromSupabase(propertyId);
+    if (fromSupabase) return fromSupabase;
+    const local = listLocalProperties().find((item) => item.propertyID === propertyId);
+    if (local) return local;
+  }
   return parseResponse<Property>(response);
 }
 
@@ -113,6 +150,16 @@ export async function updateProperty(
     body: JSON.stringify(updates),
   });
 
+  if (shouldUseSupabaseFallback(response.status, await response.clone().text())) {
+    try {
+      return await updatePropertyInSupabase(propertyId, updates);
+    } catch {
+      const current = listLocalProperties().find((item) => item.propertyID === propertyId);
+      if (!current) throw new Error("Could not update listing.");
+      return saveLocalProperty({ ...current, ...updates, propertyID: propertyId });
+    }
+  }
+
   return parseResponse<Property>(response);
 }
 
@@ -124,6 +171,15 @@ export async function deleteProperty(propertyId: string, _userId: string): Promi
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
+
+  if (shouldUseSupabaseFallback(response.status, await response.clone().text())) {
+    try {
+      await deletePropertyInSupabase(propertyId);
+    } catch {
+      removeLocalProperty(propertyId);
+    }
+    return;
+  }
 
   if (!response.ok) {
     await parseResponse(response);
@@ -153,5 +209,9 @@ export async function getAllProperties(filters?: {
     : `${API_BASE_URL}/properties`;
 
   const response = await fetch(url);
-  return parseResponse<Property[]>(response);
+  const fromApi = response.ok ? await parseResponse<Property[]>(response) : [];
+  return mergeProperties(
+    fromApi,
+    mergeProperties(await listPropertiesFromSupabase(), listLocalProperties()),
+  );
 }

@@ -148,6 +148,51 @@ create policy "Public can read properties"
   using (true);
 
 -- Writes go through the FastAPI service role connection, which bypasses RLS.
+-- These policies also let the website keep working when the Render API is stale.
+
+drop policy if exists "Users can read self" on public.users;
+create policy "Users can read self"
+  on public.users
+  for select
+  to authenticated
+  using (id = auth.uid()::text);
+
+drop policy if exists "Users can insert self" on public.users;
+create policy "Users can insert self"
+  on public.users
+  for insert
+  to authenticated
+  with check (id = auth.uid()::text);
+
+drop policy if exists "Users can update self" on public.users;
+create policy "Users can update self"
+  on public.users
+  for update
+  to authenticated
+  using (id = auth.uid()::text)
+  with check (id = auth.uid()::text);
+
+drop policy if exists "Owners insert own listings" on public.properties;
+create policy "Owners insert own listings"
+  on public.properties
+  for insert
+  to authenticated
+  with check (user_id = auth.uid()::text);
+
+drop policy if exists "Owners update own listings" on public.properties;
+create policy "Owners update own listings"
+  on public.properties
+  for update
+  to authenticated
+  using (user_id = auth.uid()::text)
+  with check (user_id = auth.uid()::text);
+
+drop policy if exists "Owners delete own listings" on public.properties;
+create policy "Owners delete own listings"
+  on public.properties
+  for delete
+  to authenticated
+  using (user_id = auth.uid()::text);
 
 -- Public bucket for land photos. The API also creates this on first upload.
 insert into storage.buckets (id, name, public, file_size_limit)
