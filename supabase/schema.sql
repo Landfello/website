@@ -152,4 +152,27 @@ create policy "Public can read properties"
 -- Public bucket for land photos. The API also creates this on first upload.
 insert into storage.buckets (id, name, public, file_size_limit)
 values ('listing-images', 'listing-images', true, 5242880)
-on conflict (id) do nothing;
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit;
+
+drop policy if exists "Public read listing images" on storage.objects;
+create policy "Public read listing images"
+  on storage.objects
+  for select
+  using (bucket_id = 'listing-images');
+
+drop policy if exists "Signed-in users upload listing images" on storage.objects;
+create policy "Signed-in users upload listing images"
+  on storage.objects
+  for insert
+  to authenticated
+  with check (bucket_id = 'listing-images');
+
+drop policy if exists "Signed-in users update listing images" on storage.objects;
+create policy "Signed-in users update listing images"
+  on storage.objects
+  for update
+  to authenticated
+  using (bucket_id = 'listing-images')
+  with check (bucket_id = 'listing-images');

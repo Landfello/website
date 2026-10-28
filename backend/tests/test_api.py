@@ -159,3 +159,8 @@ def test_signup_agent_and_investor(client):
     )
     assert buyer.status_code == 200
     assert buyer.json()["user"]["profile"]["accountType"] == "investor"
+
+
+def test_upload_route_exists(client):
+    resp = client.post("/api/uploads")
+    assert resp.status_code != 404
